@@ -1,12 +1,119 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Header } from "@/components/Header";
+import { HeroSection } from "@/components/HeroSection";
+import { TripIntakeForm } from "@/components/TripIntakeForm";
+import { TripResults } from "@/components/TripResults";
+import { Footer } from "@/components/Footer";
+import { generateMockTripPlan } from "@/data/mockTripData";
+import type { TripDetails, TripPlan } from "@/types/trip";
 
 const Index = () => {
+  const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
+  const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleFormSubmit = async (details: TripDetails) => {
+    setIsLoading(true);
+    setTripDetails(details);
+
+    // Simulate API call delay for realistic experience
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    const plan = generateMockTripPlan(details);
+    setTripPlan(plan);
+    setIsLoading(false);
+
+    // Scroll to results
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
+  };
+
+  const handleToggleItem = (type: string, id: string) => {
+    if (!tripPlan) return;
+
+    setTripPlan((prev) => {
+      if (!prev) return prev;
+
+      if (type === "outboundFlight" && prev.outboundFlight) {
+        return {
+          ...prev,
+          outboundFlight: { ...prev.outboundFlight, included: !prev.outboundFlight.included },
+        };
+      }
+      if (type === "returnFlight" && prev.returnFlight) {
+        return {
+          ...prev,
+          returnFlight: { ...prev.returnFlight, included: !prev.returnFlight.included },
+        };
+      }
+      if (type === "carRental" && prev.carRental) {
+        return {
+          ...prev,
+          carRental: { ...prev.carRental, included: !prev.carRental.included },
+        };
+      }
+      if (type === "hotel" && prev.hotel) {
+        return {
+          ...prev,
+          hotel: { ...prev.hotel, included: !prev.hotel.included },
+        };
+      }
+      if (type === "itinerary") {
+        return {
+          ...prev,
+          itinerary: prev.itinerary.map((day) => ({
+            ...day,
+            items: day.items.map((item) =>
+              item.id === id ? { ...item, included: !item.included } : item
+            ),
+          })),
+        };
+      }
+
+      return prev;
+    });
+  };
+
+  const handleReset = () => {
+    setTripDetails(null);
+    setTripPlan(null);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+
+      {!tripPlan ? (
+        <>
+          <HeroSection />
+          <main className="container mx-auto px-4 py-16 max-w-2xl">
+            <div className="text-center mb-12 animate-fade-in">
+              <h2 className="font-display text-3xl font-semibold text-foreground mb-3">
+                Begin Your Journey
+              </h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Tell us about your ideal trip. We'll craft a complete itinerary 
+                with real-time pricing and thoughtful recommendations.
+              </p>
+            </div>
+            <TripIntakeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
+          </main>
+        </>
+      ) : (
+        <main className="container mx-auto px-4 py-12 max-w-4xl">
+          {tripDetails && (
+            <TripResults
+              tripDetails={tripDetails}
+              tripPlan={tripPlan}
+              onToggleItem={handleToggleItem}
+              onReset={handleReset}
+            />
+          )}
+        </main>
+      )}
+
+      <Footer />
     </div>
   );
 };
