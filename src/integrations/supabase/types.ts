@@ -14,7 +14,196 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trip_items: {
+        Row: {
+          cost: number
+          created_at: string
+          currency: string
+          day_number: number | null
+          description: string | null
+          distance_from_previous: number | null
+          end_time: string | null
+          id: string
+          included: boolean
+          item_type: string
+          lat: number | null
+          lon: number | null
+          name: string
+          order_in_day: number | null
+          provider_data: Json | null
+          start_time: string | null
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          currency?: string
+          day_number?: number | null
+          description?: string | null
+          distance_from_previous?: number | null
+          end_time?: string | null
+          id?: string
+          included?: boolean
+          item_type: string
+          lat?: number | null
+          lon?: number | null
+          name: string
+          order_in_day?: number | null
+          provider_data?: Json | null
+          start_time?: string | null
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          currency?: string
+          day_number?: number | null
+          description?: string | null
+          distance_from_previous?: number | null
+          end_time?: string | null
+          id?: string
+          included?: boolean
+          item_type?: string
+          lat?: number | null
+          lon?: number | null
+          name?: string
+          order_in_day?: number | null
+          provider_data?: Json | null
+          start_time?: string | null
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_items_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          adults: number
+          children: number
+          created_at: string
+          departure_date: string
+          destination_airport_codes: string[] | null
+          destination_city: string
+          destination_country: string | null
+          destination_iata_code: string | null
+          destination_lat: number | null
+          destination_lon: number | null
+          flight_class: string
+          id: string
+          include_car: boolean
+          include_hotel: boolean
+          infants: number
+          origin_airport_codes: string[] | null
+          origin_city: string
+          origin_country: string | null
+          origin_iata_code: string | null
+          origin_lat: number | null
+          origin_lon: number | null
+          return_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adults?: number
+          children?: number
+          created_at?: string
+          departure_date: string
+          destination_airport_codes?: string[] | null
+          destination_city: string
+          destination_country?: string | null
+          destination_iata_code?: string | null
+          destination_lat?: number | null
+          destination_lon?: number | null
+          flight_class?: string
+          id?: string
+          include_car?: boolean
+          include_hotel?: boolean
+          infants?: number
+          origin_airport_codes?: string[] | null
+          origin_city: string
+          origin_country?: string | null
+          origin_iata_code?: string | null
+          origin_lat?: number | null
+          origin_lon?: number | null
+          return_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adults?: number
+          children?: number
+          created_at?: string
+          departure_date?: string
+          destination_airport_codes?: string[] | null
+          destination_city?: string
+          destination_country?: string | null
+          destination_iata_code?: string | null
+          destination_lat?: number | null
+          destination_lon?: number | null
+          flight_class?: string
+          id?: string
+          include_car?: boolean
+          include_hotel?: boolean
+          infants?: number
+          origin_airport_codes?: string[] | null
+          origin_city?: string
+          origin_country?: string | null
+          origin_iata_code?: string | null
+          origin_lat?: number | null
+          origin_lon?: number | null
+          return_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
