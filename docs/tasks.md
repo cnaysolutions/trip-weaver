@@ -10,7 +10,7 @@
 | Phase | Status | Description |
 |-------|--------|-------------|
 | Phase 1 | 🟢 Complete | Foundation & Authentication |
-| Phase 2 | ⚪ Not Started | Concierge Trip Intake |
+| Phase 2 | 🟡 In Progress | Concierge Trip Intake |
 | Phase 3 | ⚪ Not Started | Flight Curation |
 | Phase 4 | ⚪ Not Started | Cost Intelligence Core |
 | Phase 5 | ⚪ Not Started | Airport Mobility |
@@ -373,9 +373,9 @@ export function useAuth() {
 ## Phase 2: Concierge Trip Intake
 
 ### 2.1 Amadeus API Integration
-**Status:** ⚪ Not Started
+**Status:** 🟢 Complete
 
-#### Subtask 2.1.1: Create Amadeus Edge Function for City Search
+#### Subtask 2.1.1: Create Amadeus Edge Function for City Search ✅
 **File:** `supabase/functions/amadeus-city-search/index.ts`
 
 ```typescript
@@ -482,34 +482,34 @@ project_id = "wpadifvbkmgnbwztcfli"
 verify_jwt = false
 ```
 
-#### Subtask 2.1.2: Create City Autocomplete Component
+#### Subtask 2.1.2: Create City Autocomplete Component ✅
 **File:** `src/components/CityAutocomplete.tsx`
 
 Features:
-- [ ] Debounced input (300ms)
-- [ ] Show loading state
-- [ ] Display city name + country + IATA code
-- [ ] Handle selection with full location data
-- [ ] Graceful error handling
-- [ ] Match design system
+- [x] Debounced input (300ms)
+- [x] Show loading state
+- [x] Display city name + country + IATA code
+- [x] Handle selection with full location data
+- [x] Graceful error handling
+- [x] Match design system
 
 ---
 
 ### 2.2 Trip Intake Form (Conversational)
-**Status:** ⚪ Not Started
+**Status:** 🟢 Complete
 
-#### Subtask 2.2.1: Refactor TripIntakeForm
-- [ ] Replace free text inputs with CityAutocomplete
+#### Subtask 2.2.1: Refactor TripIntakeForm ✅
+- [x] Replace free text inputs with CityAutocomplete
 - [ ] Add form validation with zod
 - [ ] Auto-save to database on changes (debounced)
-- [ ] Show normalized city data after selection
-- [ ] Add conversational microcopy
+- [x] Show normalized city data after selection
+- [x] Add conversational microcopy
 
 **Microcopy examples from design-guidelines.md:**
-- "Where would you like to start your journey?"
-- "And where are you dreaming of going?"
-- "When works best for you?"
-- "Who's coming along?"
+- "Where would you like to start your journey?" ✅
+- "And where are you dreaming of going?" ✅
+- "When works best for you?" ✅
+- "Who's coming along?" ✅
 
 ---
 

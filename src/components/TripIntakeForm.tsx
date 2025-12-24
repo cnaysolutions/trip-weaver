@@ -2,13 +2,14 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Minus, Plus, Plane, Users, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { cn } from "@/lib/utils";
 import type { TripDetails, FlightClass } from "@/types/trip";
+import type { Location } from "@/types/location";
 
 interface TripIntakeFormProps {
   onSubmit: (details: TripDetails) => void;
@@ -18,6 +19,8 @@ interface TripIntakeFormProps {
 export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
   const [departureCity, setDepartureCity] = useState("");
   const [destinationCity, setDestinationCity] = useState("");
+  const [departureLocation, setDepartureLocation] = useState<Location | null>(null);
+  const [destinationLocation, setDestinationLocation] = useState<Location | null>(null);
   const [departureDate, setDepartureDate] = useState<Date | null>(null);
   const [returnDate, setReturnDate] = useState<Date | null>(null);
   const [adults, setAdults] = useState(2);
@@ -32,6 +35,8 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
     onSubmit({
       departureCity,
       destinationCity,
+      departureLocation,
+      destinationLocation,
       departureDate,
       returnDate,
       passengers: { adults, children, infants },
@@ -40,6 +45,35 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
       includeHotel,
     });
   };
+
+  const handleDepartureLocationSelect = (location: Location) => {
+    setDepartureLocation(location);
+  };
+
+  const handleDestinationLocationSelect = (location: Location) => {
+    setDestinationLocation(location);
+  };
+
+  // Clear location when input changes manually
+  const handleDepartureCityChange = (value: string) => {
+    setDepartureCity(value);
+    if (departureLocation && value !== formatLocation(departureLocation)) {
+      setDepartureLocation(null);
+    }
+  };
+
+  const handleDestinationCityChange = (value: string) => {
+    setDestinationCity(value);
+    if (destinationLocation && value !== formatLocation(destinationLocation)) {
+      setDestinationLocation(null);
+    }
+  };
+
+  function formatLocation(location: Location): string {
+    const parts = [location.cityName];
+    if (location.countryName) parts.push(location.countryName);
+    return parts.join(', ');
+  }
 
   const PassengerControl = ({
     label,
@@ -90,6 +124,8 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
     { value: "first", label: "First Class" },
   ];
 
+  const isFormValid = departureLocation && destinationLocation && departureDate && returnDate;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Destination Section */}
@@ -108,23 +144,25 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
         <CardContent className="space-y-5">
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="departure">Departure City</Label>
-              <Input
+              <Label htmlFor="departure">Where are you starting from?</Label>
+              <CityAutocomplete
                 id="departure"
-                placeholder="London, Paris, New York..."
                 value={departureCity}
-                onChange={(e) => setDepartureCity(e.target.value)}
-                required
+                onChange={handleDepartureCityChange}
+                onLocationSelect={handleDepartureLocationSelect}
+                selectedLocation={departureLocation}
+                placeholder="London, Paris, New York..."
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="destination">Destination</Label>
-              <Input
+              <Label htmlFor="destination">And where are you dreaming of going?</Label>
+              <CityAutocomplete
                 id="destination"
-                placeholder="Rome, Tokyo, Bali..."
                 value={destinationCity}
-                onChange={(e) => setDestinationCity(e.target.value)}
-                required
+                onChange={handleDestinationCityChange}
+                onLocationSelect={handleDestinationLocationSelect}
+                selectedLocation={destinationLocation}
+                placeholder="Rome, Tokyo, Bali..."
               />
             </div>
           </div>
@@ -139,7 +177,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
               <CalendarDays className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <CardTitle>When are you traveling?</CardTitle>
+              <CardTitle>When works best for you?</CardTitle>
               <CardDescription>Select your travel dates</CardDescription>
             </div>
           </div>
@@ -168,6 +206,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
                     onSelect={(date) => setDepartureDate(date || null)}
                     disabled={(date) => date < new Date()}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -194,6 +233,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
                     onSelect={(date) => setReturnDate(date || null)}
                     disabled={(date) => date < (departureDate || new Date())}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -210,7 +250,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
               <Users className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <CardTitle>Who's traveling?</CardTitle>
+              <CardTitle>Who's coming along?</CardTitle>
               <CardDescription>Tell us about your travel party</CardDescription>
             </div>
           </div>
@@ -336,7 +376,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
           variant="hero"
           size="xl"
           className="w-full"
-          disabled={isLoading || !departureCity || !destinationCity || !departureDate || !returnDate}
+          disabled={isLoading || !isFormValid}
         >
           {isLoading ? (
             <>
