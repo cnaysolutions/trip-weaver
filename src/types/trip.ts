@@ -1,3 +1,5 @@
+import type { Location } from './location';
+
 export interface Passenger {
   adults: number;
   children: number;
@@ -9,6 +11,8 @@ export type FlightClass = "economy" | "business" | "first";
 export interface TripDetails {
   departureCity: string;
   destinationCity: string;
+  departureLocation?: Location | null;
+  destinationLocation?: Location | null;
   departureDate: Date | null;
   returnDate: Date | null;
   passengers: Passenger;
