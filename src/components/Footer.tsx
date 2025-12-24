@@ -1,4 +1,5 @@
 import { Compass } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
@@ -44,23 +45,23 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Support */}
+          {/* Legal */}
           <div>
-            <h4 className="font-medium mb-4">Support</h4>
+            <h4 className="font-medium mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link to="/privacy" className="hover:text-foreground transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="hover:text-foreground transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
               <li>
                 <a href="#" className="hover:text-foreground transition-colors">
                   Contact Us
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-foreground transition-colors">
-                  FAQ
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-foreground transition-colors">
-                  Privacy Policy
                 </a>
               </li>
             </ul>
