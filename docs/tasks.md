@@ -500,16 +500,24 @@ Features:
 
 #### Subtask 2.2.1: Refactor TripIntakeForm ✅
 - [x] Replace free text inputs with CityAutocomplete
-- [ ] Add form validation with zod
-- [ ] Auto-save to database on changes (debounced)
 - [x] Show normalized city data after selection
 - [x] Add conversational microcopy
+- [x] Button enables when human input is complete (city text, dates, adults)
+- [x] Post-click IATA normalization if user typed but didn't select
+- [x] Gentle inline error if normalization fails
+- [ ] Add form validation with zod (optional enhancement)
+- [ ] Auto-save to database on changes (debounced)
 
 **Microcopy examples from design-guidelines.md:**
 - "Where would you like to start your journey?" ✅
 - "And where are you dreaming of going?" ✅
 - "When works best for you?" ✅
 - "Who's coming along?" ✅
+
+#### Subtask 2.2.2: Create /trip/new Route ✅
+- [x] Created `src/pages/TripIntake.tsx` with SEO meta tags
+- [x] Added protected route `/trip/new` in `src/App.tsx`
+- [x] Renders TripIntakeForm with results display
 
 ---
 

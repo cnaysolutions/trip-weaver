@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Minus, Plus, Plane, Users, CalendarDays } from "lucide-react";
+import { CalendarIcon, Minus, Plus, Plane, Users, CalendarDays, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import type { TripDetails, FlightClass } from "@/types/trip";
 import type { Location } from "@/types/location";
 
@@ -30,13 +31,75 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
   const [includeCarRental, setIncludeCarRental] = useState(true);
   const [includeHotel, setIncludeHotel] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Inline error states for gentle feedback
+  const [departureError, setDepartureError] = useState<string | null>(null);
+  const [destinationError, setDestinationError] = useState<string | null>(null);
+  const [isNormalizing, setIsNormalizing] = useState(false);
+
+  // Attempt to normalize a city name to a Location via Amadeus API
+  async function normalizeCity(cityText: string): Promise<Location | null> {
+    if (!cityText.trim()) return null;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("amadeus-city-search", {
+        body: { keyword: cityText.trim() },
+      });
+
+      if (error) {
+        console.error("City normalization error:", error);
+        return null;
+      }
+
+      const locations = data?.locations as Location[] | undefined;
+      if (locations && locations.length > 0) {
+        // Return best match (first result)
+        return locations[0];
+      }
+      return null;
+    } catch (err) {
+      console.error("City normalization exception:", err);
+      return null;
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDepartureError(null);
+    setDestinationError(null);
+
+    let finalDeparture = departureLocation;
+    let finalDestination = destinationLocation;
+
+    // If user typed but didn't select, attempt normalization
+    if (!finalDeparture && departureCity.trim()) {
+      setIsNormalizing(true);
+      finalDeparture = await normalizeCity(departureCity);
+      if (!finalDeparture) {
+        setDepartureError("We couldn't find this city. Please select from the suggestions.");
+        setIsNormalizing(false);
+        return;
+      }
+      setDepartureLocation(finalDeparture);
+    }
+
+    if (!finalDestination && destinationCity.trim()) {
+      setIsNormalizing(true);
+      finalDestination = await normalizeCity(destinationCity);
+      if (!finalDestination) {
+        setDestinationError("We couldn't find this city. Please select from the suggestions.");
+        setIsNormalizing(false);
+        return;
+      }
+      setDestinationLocation(finalDestination);
+    }
+
+    setIsNormalizing(false);
+
     onSubmit({
       departureCity,
       destinationCity,
-      departureLocation,
-      destinationLocation,
+      departureLocation: finalDeparture,
+      destinationLocation: finalDestination,
       departureDate,
       returnDate,
       passengers: { adults, children, infants },
@@ -48,15 +111,18 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
 
   const handleDepartureLocationSelect = (location: Location) => {
     setDepartureLocation(location);
+    setDepartureError(null);
   };
 
   const handleDestinationLocationSelect = (location: Location) => {
     setDestinationLocation(location);
+    setDestinationError(null);
   };
 
-  // Clear location when input changes manually
+  // Clear location and error when input changes manually
   const handleDepartureCityChange = (value: string) => {
     setDepartureCity(value);
+    setDepartureError(null);
     if (departureLocation && value !== formatLocation(departureLocation)) {
       setDepartureLocation(null);
     }
@@ -64,6 +130,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
 
   const handleDestinationCityChange = (value: string) => {
     setDestinationCity(value);
+    setDestinationError(null);
     if (destinationLocation && value !== formatLocation(destinationLocation)) {
       setDestinationLocation(null);
     }
@@ -164,6 +231,12 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
                 selectedLocation={departureLocation}
                 placeholder="London, Paris, New York..."
               />
+              {departureError && (
+                <p className="flex items-center gap-1.5 text-sm text-destructive animate-fade-in">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {departureError}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="destination">And where are you dreaming of going?</Label>
@@ -175,6 +248,12 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
                 selectedLocation={destinationLocation}
                 placeholder="Rome, Tokyo, Bali..."
               />
+              {destinationError && (
+                <p className="flex items-center gap-1.5 text-sm text-destructive animate-fade-in">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {destinationError}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -387,12 +466,12 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
           variant="hero"
           size="xl"
           className="w-full"
-          disabled={isLoading || !isFormValid}
+          disabled={isLoading || isNormalizing || !isFormValid}
         >
-          {isLoading ? (
-            <>
-              <span className="animate-pulse">Preparing your itinerary...</span>
-            </>
+          {isLoading || isNormalizing ? (
+            <span className="animate-pulse">
+              {isNormalizing ? "Verifying locations..." : "Preparing your itinerary..."}
+            </span>
           ) : (
             "Plan My Journey"
           )}
