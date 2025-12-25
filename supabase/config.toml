@@ -1,1 +1,4 @@
 project_id = "wpadifvbkmgnbwztcfli"
+
+[functions.amadeus-city-search]
+verify_jwt = false
