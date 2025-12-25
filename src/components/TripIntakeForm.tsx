@@ -124,7 +124,18 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
     { value: "first", label: "First Class" },
   ];
 
-  const isFormValid = departureLocation && destinationLocation && departureDate && returnDate;
+  // Separate human input completeness from normalized API readiness
+  // Button enables when user intent is complete (text filled), not when IATA codes exist
+  const isHumanInputComplete =
+    Boolean(departureCity.trim()) &&
+    Boolean(destinationCity.trim()) &&
+    Boolean(departureDate) &&
+    Boolean(returnDate) &&
+    adults > 0;
+
+  // Optional services don't block submission - they're handled after click
+  // Car rental and hotel toggles are preferences, not validation requirements
+  const isFormValid = isHumanInputComplete;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
