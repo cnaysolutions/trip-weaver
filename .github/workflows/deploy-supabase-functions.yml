@@ -18,10 +18,7 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy Edge Functions
-        run: supabase functions deploy amadeus-city-search
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}objects. This is most likely because the user is typing the city name but not completing the selection by clicking on an item in the autocomplete dropdown.
-
-
+    - name: Deploy Edge Functions
+  run: supabase functions deploy amadeus-city-search --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+  env:
+    SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
