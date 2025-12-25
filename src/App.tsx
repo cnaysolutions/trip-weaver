@@ -7,6 +7,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Trips from "./pages/Trips";
+import TripIntake from "./pages/TripIntake";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Trips />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trip/new"
+            element={
+              <ProtectedRoute>
+                <TripIntake />
               </ProtectedRoute>
             }
           />
