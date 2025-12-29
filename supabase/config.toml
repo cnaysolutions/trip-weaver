@@ -1,4 +1,7 @@
 project_id = "wpadifvbkmgnbwztcfli"
 
+[functions.send-trip-email]
+verify_jwt = false
+
 [functions.amadeus-city-search]
 verify_jwt = false
