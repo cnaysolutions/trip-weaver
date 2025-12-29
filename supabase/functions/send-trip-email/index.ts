@@ -27,7 +27,7 @@ const corsHeaders = {
 
 interface TripEmailRequest {
   email: string;
-  format: "text" | "pdf";
+  format: "text" | "html";
   tripDetails: {
     departureCity: string;
     destinationCity: string;
