@@ -14,10 +14,15 @@ import {
   Camera,
   Coffee,
   Bed,
+  Mail,
+  FileText,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { TripDetails, TripPlan, DayItinerary } from "@/types/trip";
 
 interface TripResultsProps {
@@ -29,6 +34,10 @@ interface TripResultsProps {
 
 export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: TripResultsProps) {
   const [activeDay, setActiveDay] = useState(0);
+  const [emailFormat, setEmailFormat] = useState<"text" | "html">("html");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   const totalCost = useMemo(() => {
     let cost = 0;
@@ -65,6 +74,61 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
       currency: "EUR",
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const sendEmail = async () => {
+    if (!user?.email) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to send the itinerary to your email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const response = await fetch(
+        "https://wpadifvbkmgnbwztcfli.supabase.co/functions/v1/send-trip-email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            format: emailFormat === "html" ? "html" : "text",
+            tripDetails: {
+              departureCity: tripDetails.departureCity,
+              destinationCity: tripDetails.destinationCity,
+              departureDate: tripDetails.departureDate,
+              returnDate: tripDetails.returnDate,
+              passengers: tripDetails.passengers,
+              flightClass: tripDetails.flightClass,
+            },
+            tripPlan,
+            totalCost,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to send email");
+      }
+
+      toast({
+        title: "Email sent!",
+        description: `Your itinerary has been sent to ${user.email}`,
+      });
+    } catch (error: any) {
+      console.error("Error sending email:", error);
+      toast({
+        title: "Failed to send email",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const getItemIcon = (type: string) => {
@@ -319,6 +383,37 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
           </div>
         </CardContent>
       </Card>
+
+      {/* Send to Email Section */}
+      <div className="flex items-center justify-end gap-3">
+        <select
+          value={emailFormat}
+          onChange={(e) => setEmailFormat(e.target.value as "text" | "html")}
+          className="px-3 py-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+          disabled={isSendingEmail}
+        >
+          <option value="html">Formatted HTML</option>
+          <option value="text">Plain Text</option>
+        </select>
+        <Button
+          variant="outline"
+          onClick={sendEmail}
+          disabled={isSendingEmail}
+          className="gap-2"
+        >
+          {isSendingEmail ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Mail className="h-4 w-4" />
+              Send to my email
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
