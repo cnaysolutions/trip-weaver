@@ -257,16 +257,16 @@ CREATE INDEX idx_trip_items_day ON public.trip_items(day_number, order_in_day);
 ---
 
 ### 1.2 Authentication Implementation
-**Status:** ⚪ Not Started
+**Status:** 🟢 Complete
 
 #### Subtask 1.2.1: Create Auth Page (`/auth`)
-- [ ] Create `src/pages/Auth.tsx`
-- [ ] Implement email/password sign up with validation (zod)
-- [ ] Implement email/password sign in
-- [ ] Add Google OAuth button (requires user to configure in Supabase dashboard)
-- [ ] Handle auth errors gracefully with toast notifications
-- [ ] Set `emailRedirectTo` for signup
-- [ ] Match design system (navy, ivory, champagne)
+- [x] Create `src/pages/Auth.tsx`
+- [x] Implement email/password sign up with validation (zod)
+- [x] Implement email/password sign in
+- [x] Add Google OAuth button (full-page redirect; avoids iframe/popup 403)
+- [x] Handle auth errors gracefully with toast notifications
+- [x] Set `emailRedirectTo` for signup
+- [x] Match design system (navy, ivory, champagne)
 
 **Reference files:**
 - `src/index.css` - Design tokens
@@ -322,10 +322,26 @@ export function useAuth() {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const redirectTo = `${window.location.origin}/`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` }
+      options: { redirectTo, skipBrowserRedirect: true },
     });
+
+    if (!error && data?.url) {
+      try {
+        if (window.top && window.top !== window) {
+          window.open(data.url, '_top');
+          return { error: null };
+        }
+      } catch {
+        // ignore
+      }
+
+      window.location.href = data.url;
+      return { error: null };
+    }
+
     return { error };
   };
 
@@ -339,14 +355,14 @@ export function useAuth() {
 ```
 
 #### Subtask 1.2.2: Protected Routes
-- [ ] Create `src/components/ProtectedRoute.tsx`
-- [ ] Redirect unauthenticated users to `/auth`
-- [ ] Show loading state during auth check
+- [x] Create `src/components/auth/ProtectedRoute.tsx`
+- [x] Redirect unauthenticated users to `/auth`
+- [x] Show loading state during auth check
 
 #### Subtask 1.2.3: Update Header with Auth State
-- [ ] Show user avatar/name when logged in
-- [ ] Add sign out button
-- [ ] Show "Sign In" link when logged out
+- [x] Show user avatar/name when logged in
+- [x] Add sign out button
+- [x] Show "Sign In" link when logged out
 
 ---
 
