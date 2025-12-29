@@ -45,10 +45,29 @@ export function useAuth() {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const redirectTo = `${window.location.origin}/`;
+
+    // In embedded contexts (iframes), Google blocks OAuth if it isn't a top-level navigation.
+    // We therefore request the URL and then force a full-page redirect.
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` }
+      options: { redirectTo, skipBrowserRedirect: true },
     });
+
+    if (!error && data?.url) {
+      try {
+        if (window.top && window.top !== window) {
+          window.open(data.url, '_top');
+          return { error: null };
+        }
+      } catch {
+        // ignore and fall back to same-window navigation
+      }
+
+      window.location.href = data.url;
+      return { error: null };
+    }
+
     return { error };
   };
 
