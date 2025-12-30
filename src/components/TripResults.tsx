@@ -17,6 +17,7 @@ import {
   Mail,
   FileText,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,30 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { TripDetails, TripPlan, DayItinerary } from "@/types/trip";
+
+// Helper function to generate Google Maps URL
+const getGoogleMapsLink = (locationQuery: string): string => {
+  const encodedLocation = encodeURIComponent(locationQuery);
+  return `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+};
+
+// Google Maps link component
+function GoogleMapsLink({ query, className }: { query: string; className?: string }) {
+  return (
+    <a
+      href={getGoogleMapsLink(query)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent transition-colors",
+        className
+      )}
+    >
+      <ExternalLink className="h-3 w-3" />
+      View on Google Maps
+    </a>
+  );
+}
 
 interface TripResultsProps {
   tripDetails: TripDetails;
@@ -216,6 +241,10 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
                       {tripPlan.carRental.pickupTime} - {tripPlan.carRental.dropoffTime}
                     </span>
                   </div>
+                  <GoogleMapsLink 
+                    query={tripPlan.carRental.pickupLocation} 
+                    className="mt-2"
+                  />
                 </div>
                 <div className="text-right ml-4">
                   <p className="font-display text-2xl font-semibold">
@@ -279,6 +308,10 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
                       {tripPlan.hotel.distanceFromAirport} from airport
                     </span>
                   </div>
+                  <GoogleMapsLink 
+                    query={`${tripPlan.hotel.name}, ${tripPlan.hotel.address}`} 
+                    className="mt-2"
+                  />
                   <div className="flex flex-wrap gap-2">
                     {tripPlan.hotel.amenities.slice(0, 4).map((amenity) => (
                       <span
@@ -352,6 +385,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
             onToggleItem={(itemId) => onToggleItem("itinerary", itemId)}
             formatCurrency={formatCurrency}
             getItemIcon={getItemIcon}
+            destinationCity={tripDetails.destinationCity}
           />
         )}
       </div>
@@ -442,6 +476,10 @@ function FlightCard({
           <div className="text-center">
             <p className="font-display text-2xl font-semibold">{flight.originCode}</p>
             <p className="text-sm text-muted-foreground">{flight.departureTime}</p>
+            <GoogleMapsLink 
+              query={`${flight.origin} Airport`} 
+              className="mt-1"
+            />
           </div>
           <div className="flex-1 px-4 flex flex-col items-center">
             <p className="text-xs text-muted-foreground mb-1">{flight.duration}</p>
@@ -455,6 +493,10 @@ function FlightCard({
           <div className="text-center">
             <p className="font-display text-2xl font-semibold">{flight.destinationCode}</p>
             <p className="text-sm text-muted-foreground">{flight.arrivalTime}</p>
+            <GoogleMapsLink 
+              query={`${flight.destination} Airport`} 
+              className="mt-1"
+            />
           </div>
         </div>
         <div className="flex items-center justify-between pt-2 border-t border-border">
@@ -492,11 +534,13 @@ function DayTimeline({
   onToggleItem,
   formatCurrency,
   getItemIcon,
+  destinationCity,
 }: {
   day: DayItinerary;
   onToggleItem: (itemId: string) => void;
   formatCurrency: (amount: number) => string;
   getItemIcon: (type: string) => React.ComponentType<{ className?: string }>;
+  destinationCity: string;
 }) {
   return (
     <div className="space-y-0">
@@ -552,6 +596,13 @@ function DayTimeline({
                       <p className="text-sm text-muted-foreground mt-1 max-w-md">
                         {item.description}
                       </p>
+                      {/* Show Google Maps link for attractions, meals, and hotel activities */}
+                      {(item.type === "attraction" || item.type === "meal" || item.type === "hotel") && (
+                        <GoogleMapsLink 
+                          query={`${item.title}, ${destinationCity}`} 
+                          className="mt-2"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
