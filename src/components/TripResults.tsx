@@ -77,19 +77,24 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
   };
 
   const sendEmail = async () => {
-    const email = user?.email || user?.user_metadata?.email;
-    
-    if (!email) {
-      alert("Logged-in user email not found");
-      return;
-    }
-    if (!tripPlan) {
-      alert("Search result not found. Please run the search again.");
+    const loggedInEmail =
+      user?.email ||
+      user?.user_metadata?.email;
+
+    // 🔒 TEMPORARY RESTRICTION (until domain verified)
+    if (loggedInEmail !== "patchnetit@gmail.com") {
+      alert(
+        "Email sending is temporarily limited while setup is completing. Please check back shortly."
+      );
       return;
     }
 
-    console.log("Sending email to:", email);
-    console.log("Search data:", tripPlan);
+    if (!tripPlan) {
+      alert("Please run a search first.");
+      return;
+    }
+
+    console.log("Sending email to:", loggedInEmail);
 
     setIsSendingEmail(true);
     const res = await fetch(
@@ -98,7 +103,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: "patchnetit@gmail.com", // 🔒 force test email
           data: tripPlan,
         }),
       }
@@ -109,10 +114,11 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
     setIsSendingEmail(false);
 
     if (!res.ok) {
-      alert("Failed to send email");
+      alert("Failed to send email.");
       return;
     }
-    alert("Email sent to your inbox");
+
+    alert("Email sent to your inbox!");
   };
 
   const getItemIcon = (type: string) => {
