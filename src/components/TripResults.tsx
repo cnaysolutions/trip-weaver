@@ -77,20 +77,19 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
   };
 
   const sendEmail = async () => {
-    console.log("DEBUG user:", user);
-    console.log("DEBUG user.email:", user?.email);
-    console.log("DEBUG tripPlan:", tripPlan);
-    
     const email = user?.email || user?.user_metadata?.email;
     
     if (!email) {
-      alert("User email is missing");
+      alert("Logged-in user email not found");
       return;
     }
     if (!tripPlan) {
-      alert("Trip plan is missing");
+      alert("Search result not found. Please run the search again.");
       return;
     }
+
+    console.log("Sending email to:", email);
+    console.log("Search data:", tripPlan);
 
     setIsSendingEmail(true);
     const res = await fetch(
@@ -99,31 +98,21 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email,
-          format: emailFormat,
-          tripDetails: {
-            departureCity: tripDetails.departureCity,
-            destinationCity: tripDetails.destinationCity,
-            departureDate: tripDetails.departureDate,
-            returnDate: tripDetails.returnDate,
-            passengers: tripDetails.passengers,
-            flightClass: tripDetails.flightClass,
-          },
-          tripPlan,
-          totalCost,
+          email,
+          data: tripPlan,
         }),
       }
     );
 
     const json = await res.json();
-    console.log("DEBUG response:", json);
+    console.log("Edge function response:", json);
     setIsSendingEmail(false);
 
     if (!res.ok) {
       alert("Failed to send email");
       return;
     }
-    alert("Email sent");
+    alert("Email sent to your inbox");
   };
 
   const getItemIcon = (type: string) => {

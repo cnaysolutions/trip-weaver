@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
-async function sendEmail(payload: { from: string; to: string[]; subject: string; html?: string; text?: string }) {
+async function sendEmailViaResend(payload: { from: string; to: string[]; subject: string; html?: string; text?: string }) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -25,25 +25,55 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface ItineraryItem {
+  title: string;
+  time: string;
+  cost?: number;
+  included: boolean;
+}
+
+interface DayItinerary {
+  day: number;
+  items: ItineraryItem[];
+}
+
+interface TripData {
+  outboundFlight?: { 
+    airline: string; 
+    originCode: string; 
+    destinationCode: string; 
+    departureTime: string; 
+    arrivalTime: string; 
+    pricePerPerson: number; 
+    included: boolean;
+  };
+  returnFlight?: { 
+    airline: string; 
+    originCode: string; 
+    destinationCode: string; 
+    departureTime: string; 
+    arrivalTime: string; 
+    pricePerPerson: number; 
+    included: boolean;
+  };
+  carRental?: { 
+    vehicleName: string; 
+    company: string; 
+    totalPrice: number; 
+    included: boolean;
+  };
+  hotel?: { 
+    name: string; 
+    pricePerNight: number; 
+    totalPrice: number; 
+    included: boolean;
+  };
+  itinerary?: DayItinerary[];
+}
+
 interface TripEmailRequest {
   email: string;
-  format: "text" | "html";
-  tripDetails: {
-    departureCity: string;
-    destinationCity: string;
-    departureDate: string;
-    returnDate: string;
-    passengers: { adults: number; children: number; infants: number };
-    flightClass: string;
-  };
-  tripPlan: {
-    outboundFlight?: { airline: string; originCode: string; destinationCode: string; departureTime: string; arrivalTime: string; pricePerPerson: number; included: boolean };
-    returnFlight?: { airline: string; originCode: string; destinationCode: string; departureTime: string; arrivalTime: string; pricePerPerson: number; included: boolean };
-    carRental?: { vehicleName: string; company: string; totalPrice: number; included: boolean };
-    hotel?: { name: string; pricePerNight: number; totalPrice: number; included: boolean };
-    itinerary: Array<{ day: number; items: Array<{ title: string; time: string; cost?: number; included: boolean }> }>;
-  };
-  totalCost: number;
+  data: TripData;
 }
 
 function formatCurrency(amount: number): string {
@@ -54,107 +84,35 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function generatePlainTextEmail(data: TripEmailRequest): string {
-  const { tripDetails, tripPlan, totalCost } = data;
-  const passengers = tripDetails.passengers.adults + tripDetails.passengers.children;
+function calculateTotalCost(data: TripData): number {
+  let total = 0;
   
-  let text = `
-═══════════════════════════════════════════════════════════════
-                    TRIPWEAVE ITINERARY
-═══════════════════════════════════════════════════════════════
-
-TRIP OVERVIEW
-─────────────────────────────────────────────────────────────────
-Route:          ${tripDetails.departureCity} → ${tripDetails.destinationCity}
-Dates:          ${tripDetails.departureDate} - ${tripDetails.returnDate}
-Passengers:     ${tripDetails.passengers.adults} Adult(s)${tripDetails.passengers.children > 0 ? `, ${tripDetails.passengers.children} Child(ren)` : ""}${tripDetails.passengers.infants > 0 ? `, ${tripDetails.passengers.infants} Infant(s)` : ""}
-Class:          ${tripDetails.flightClass.charAt(0).toUpperCase() + tripDetails.flightClass.slice(1)}
-
-`;
-
-  // Flights
-  if (tripPlan.outboundFlight || tripPlan.returnFlight) {
-    text += `
-FLIGHTS
-─────────────────────────────────────────────────────────────────
-`;
-    if (tripPlan.outboundFlight && tripPlan.outboundFlight.included) {
-      text += `Outbound:       ${tripPlan.outboundFlight.originCode} → ${tripPlan.outboundFlight.destinationCode}
-                ${tripPlan.outboundFlight.airline}
-                Departs: ${tripPlan.outboundFlight.departureTime} | Arrives: ${tripPlan.outboundFlight.arrivalTime}
-                Cost: ${formatCurrency(tripPlan.outboundFlight.pricePerPerson * passengers)}
-
-`;
-    }
-    if (tripPlan.returnFlight && tripPlan.returnFlight.included) {
-      text += `Return:         ${tripPlan.returnFlight.originCode} → ${tripPlan.returnFlight.destinationCode}
-                ${tripPlan.returnFlight.airline}
-                Departs: ${tripPlan.returnFlight.departureTime} | Arrives: ${tripPlan.returnFlight.arrivalTime}
-                Cost: ${formatCurrency(tripPlan.returnFlight.pricePerPerson * passengers)}
-
-`;
-    }
+  if (data.outboundFlight?.included) {
+    total += data.outboundFlight.pricePerPerson;
   }
-
-  // Car Rental
-  if (tripPlan.carRental && tripPlan.carRental.included) {
-    text += `
-CAR RENTAL
-─────────────────────────────────────────────────────────────────
-Vehicle:        ${tripPlan.carRental.vehicleName}
-Company:        ${tripPlan.carRental.company}
-Cost:           ${formatCurrency(tripPlan.carRental.totalPrice)}
-
-`;
+  if (data.returnFlight?.included) {
+    total += data.returnFlight.pricePerPerson;
   }
-
-  // Hotel
-  if (tripPlan.hotel && tripPlan.hotel.included) {
-    text += `
-ACCOMMODATION
-─────────────────────────────────────────────────────────────────
-Hotel:          ${tripPlan.hotel.name}
-Rate:           ${formatCurrency(tripPlan.hotel.pricePerNight)}/night
-Total:          ${formatCurrency(tripPlan.hotel.totalPrice)}
-
-`;
+  if (data.carRental?.included) {
+    total += data.carRental.totalPrice;
   }
-
-  // Daily Itinerary
-  text += `
-DAILY ITINERARY
-─────────────────────────────────────────────────────────────────
-`;
-
-  tripPlan.itinerary.forEach((day) => {
-    text += `
-Day ${day.day}
-`;
-    day.items
-      .filter((item) => item.included)
-      .forEach((item) => {
-        text += `  ${item.time.padEnd(8)} ${item.title}${item.cost ? ` (${formatCurrency(item.cost)})` : ""}
-`;
-      });
+  if (data.hotel?.included) {
+    total += data.hotel.totalPrice;
+  }
+  
+  data.itinerary?.forEach((day: DayItinerary) => {
+    day.items.forEach((item: ItineraryItem) => {
+      if (item.included && item.cost) {
+        total += item.cost;
+      }
+    });
   });
-
-  // Total
-  text += `
-
-═══════════════════════════════════════════════════════════════
-ESTIMATED TOTAL: ${formatCurrency(totalCost)}
-═══════════════════════════════════════════════════════════════
-
-This itinerary was generated by TripWeave Concierge.
-Prices are estimates and subject to change.
-`;
-
-  return text;
+  
+  return total;
 }
 
-function generateHtmlEmail(data: TripEmailRequest): string {
-  const { tripDetails, tripPlan, totalCost } = data;
-  const passengers = tripDetails.passengers.adults + tripDetails.passengers.children;
+function generateHtmlEmail(tripData: TripData): string {
+  const totalCost = calculateTotalCost(tripData);
 
   return `
 <!DOCTYPE html>
@@ -174,93 +132,73 @@ function generateHtmlEmail(data: TripEmailRequest): string {
             <td style="background: linear-gradient(135deg, #1a2744 0%, #2d3c5a 100%); padding: 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">TripWeave Itinerary</h1>
               <p style="margin: 16px 0 0; color: rgba(255,255,255,0.8); font-size: 16px;">
-                ${tripDetails.departureCity} → ${tripDetails.destinationCity}
+                Your personalized travel plan
               </p>
             </td>
           </tr>
-          
-          <!-- Trip Overview -->
-          <tr>
-            <td style="padding: 32px;">
-              <h2 style="margin: 0 0 16px; color: #1a2744; font-size: 18px; border-bottom: 2px solid #c9a962; padding-bottom: 8px;">Trip Overview</h2>
-              <table width="100%" cellpadding="8" cellspacing="0">
-                <tr>
-                  <td style="color: #666; width: 120px;">Dates</td>
-                  <td style="font-weight: 500;">${tripDetails.departureDate} - ${tripDetails.returnDate}</td>
-                </tr>
-                <tr>
-                  <td style="color: #666;">Passengers</td>
-                  <td style="font-weight: 500;">${tripDetails.passengers.adults} Adult(s)${tripDetails.passengers.children > 0 ? `, ${tripDetails.passengers.children} Child(ren)` : ""}</td>
-                </tr>
-                <tr>
-                  <td style="color: #666;">Class</td>
-                  <td style="font-weight: 500;">${tripDetails.flightClass.charAt(0).toUpperCase() + tripDetails.flightClass.slice(1)}</td>
-                </tr>
-              </table>
-            </td>
-          </tr>
 
-          ${tripPlan.outboundFlight?.included || tripPlan.returnFlight?.included ? `
+          ${tripData.outboundFlight?.included || tripData.returnFlight?.included ? `
           <!-- Flights -->
           <tr>
-            <td style="padding: 0 32px 32px;">
+            <td style="padding: 32px;">
               <h2 style="margin: 0 0 16px; color: #1a2744; font-size: 18px; border-bottom: 2px solid #c9a962; padding-bottom: 8px;">✈️ Flights</h2>
-              ${tripPlan.outboundFlight?.included ? `
+              ${tripData.outboundFlight?.included ? `
               <div style="background: #f8f5f0; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
                 <div style="font-size: 12px; color: #666; margin-bottom: 8px;">OUTBOUND</div>
-                <div style="font-size: 20px; font-weight: 600;">${tripPlan.outboundFlight.originCode} → ${tripPlan.outboundFlight.destinationCode}</div>
-                <div style="color: #666; margin-top: 4px;">${tripPlan.outboundFlight.airline} • ${tripPlan.outboundFlight.departureTime} - ${tripPlan.outboundFlight.arrivalTime}</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripPlan.outboundFlight.pricePerPerson * passengers)}</div>
+                <div style="font-size: 20px; font-weight: 600;">${tripData.outboundFlight.originCode} → ${tripData.outboundFlight.destinationCode}</div>
+                <div style="color: #666; margin-top: 4px;">${tripData.outboundFlight.airline} • ${tripData.outboundFlight.departureTime} - ${tripData.outboundFlight.arrivalTime}</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.outboundFlight.pricePerPerson)}</div>
               </div>
               ` : ""}
-              ${tripPlan.returnFlight?.included ? `
+              ${tripData.returnFlight?.included ? `
               <div style="background: #f8f5f0; border-radius: 8px; padding: 16px;">
                 <div style="font-size: 12px; color: #666; margin-bottom: 8px;">RETURN</div>
-                <div style="font-size: 20px; font-weight: 600;">${tripPlan.returnFlight.originCode} → ${tripPlan.returnFlight.destinationCode}</div>
-                <div style="color: #666; margin-top: 4px;">${tripPlan.returnFlight.airline} • ${tripPlan.returnFlight.departureTime} - ${tripPlan.returnFlight.arrivalTime}</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripPlan.returnFlight.pricePerPerson * passengers)}</div>
+                <div style="font-size: 20px; font-weight: 600;">${tripData.returnFlight.originCode} → ${tripData.returnFlight.destinationCode}</div>
+                <div style="color: #666; margin-top: 4px;">${tripData.returnFlight.airline} • ${tripData.returnFlight.departureTime} - ${tripData.returnFlight.arrivalTime}</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.returnFlight.pricePerPerson)}</div>
               </div>
               ` : ""}
             </td>
           </tr>
           ` : ""}
 
-          ${tripPlan.carRental?.included ? `
+          ${tripData.carRental?.included ? `
           <!-- Car Rental -->
           <tr>
             <td style="padding: 0 32px 32px;">
               <h2 style="margin: 0 0 16px; color: #1a2744; font-size: 18px; border-bottom: 2px solid #c9a962; padding-bottom: 8px;">🚗 Car Rental</h2>
               <div style="background: #f8f5f0; border-radius: 8px; padding: 16px;">
-                <div style="font-size: 18px; font-weight: 600;">${tripPlan.carRental.vehicleName}</div>
-                <div style="color: #666; margin-top: 4px;">${tripPlan.carRental.company}</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripPlan.carRental.totalPrice)}</div>
+                <div style="font-size: 18px; font-weight: 600;">${tripData.carRental.vehicleName}</div>
+                <div style="color: #666; margin-top: 4px;">${tripData.carRental.company}</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.carRental.totalPrice)}</div>
               </div>
             </td>
           </tr>
           ` : ""}
 
-          ${tripPlan.hotel?.included ? `
+          ${tripData.hotel?.included ? `
           <!-- Hotel -->
           <tr>
             <td style="padding: 0 32px 32px;">
               <h2 style="margin: 0 0 16px; color: #1a2744; font-size: 18px; border-bottom: 2px solid #c9a962; padding-bottom: 8px;">🏨 Accommodation</h2>
               <div style="background: #f8f5f0; border-radius: 8px; padding: 16px;">
-                <div style="font-size: 18px; font-weight: 600;">${tripPlan.hotel.name}</div>
-                <div style="color: #666; margin-top: 4px;">${formatCurrency(tripPlan.hotel.pricePerNight)}/night</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripPlan.hotel.totalPrice)} total</div>
+                <div style="font-size: 18px; font-weight: 600;">${tripData.hotel.name}</div>
+                <div style="color: #666; margin-top: 4px;">${formatCurrency(tripData.hotel.pricePerNight)}/night</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.hotel.totalPrice)} total</div>
               </div>
             </td>
           </tr>
           ` : ""}
 
+          ${tripData.itinerary && tripData.itinerary.length > 0 ? `
           <!-- Daily Itinerary -->
           <tr>
             <td style="padding: 0 32px 32px;">
               <h2 style="margin: 0 0 16px; color: #1a2744; font-size: 18px; border-bottom: 2px solid #c9a962; padding-bottom: 8px;">📅 Daily Itinerary</h2>
-              ${tripPlan.itinerary.map((day) => `
+              ${tripData.itinerary.map((day: DayItinerary) => `
                 <div style="margin-bottom: 20px;">
                   <div style="font-weight: 600; color: #1a2744; margin-bottom: 12px; background: #e8e4de; padding: 8px 12px; border-radius: 6px;">Day ${day.day}</div>
-                  ${day.items.filter((item) => item.included).map((item) => `
+                  ${day.items.filter((item: ItineraryItem) => item.included).map((item: ItineraryItem) => `
                     <div style="display: flex; padding: 8px 0; border-bottom: 1px solid #eee;">
                       <span style="color: #c9a962; font-weight: 500; min-width: 60px;">${item.time}</span>
                       <span style="flex: 1;">${item.title}</span>
@@ -271,6 +209,7 @@ function generateHtmlEmail(data: TripEmailRequest): string {
               `).join("")}
             </td>
           </tr>
+          ` : ""}
 
           <!-- Total -->
           <tr>
@@ -303,19 +242,26 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const data: TripEmailRequest = await req.json();
+    const requestData: TripEmailRequest = await req.json();
     
-    const isPlainText = data.format === "text";
-    const subject = `Your TripWeave Itinerary: ${data.tripDetails.departureCity} → ${data.tripDetails.destinationCity}`;
+    console.log("Received request with email:", requestData.email);
+    console.log("Data received:", JSON.stringify(requestData.data, null, 2));
+    
+    if (!requestData.email || !requestData.data) {
+      return new Response(
+        JSON.stringify({ error: "Missing email or data" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
-    const emailResponse = await sendEmail({
+    const subject = "Your TripWeave Itinerary";
+    const html = generateHtmlEmail(requestData.data);
+
+    const emailResponse = await sendEmailViaResend({
       from: "TripWeave <onboarding@resend.dev>",
-      to: [data.email],
+      to: [requestData.email],
       subject,
-      ...(isPlainText 
-        ? { text: generatePlainTextEmail(data) }
-        : { html: generateHtmlEmail(data) }
-      ),
+      html,
     });
 
     console.log("Email sent successfully:", emailResponse);
@@ -324,10 +270,11 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
-    console.error("Error sending trip email:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error sending trip email:", errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
