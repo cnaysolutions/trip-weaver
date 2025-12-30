@@ -77,58 +77,51 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
   };
 
   const sendEmail = async () => {
+    console.log("DEBUG user:", user);
+    console.log("DEBUG user.email:", user?.email);
+    console.log("DEBUG tripPlan:", tripPlan);
+    
     if (!user?.email) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to send the itinerary to your email.",
-        variant: "destructive",
-      });
+      alert("User email is missing");
+      return;
+    }
+    if (!tripPlan) {
+      alert("Trip plan is missing");
       return;
     }
 
     setIsSendingEmail(true);
-    try {
-      const response = await fetch(
-        "https://wpadifvbkmgnbwztcfli.supabase.co/functions/v1/send-trip-email",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: user.email,
-            format: emailFormat === "html" ? "html" : "text",
-            tripDetails: {
-              departureCity: tripDetails.departureCity,
-              destinationCity: tripDetails.destinationCity,
-              departureDate: tripDetails.departureDate,
-              returnDate: tripDetails.returnDate,
-              passengers: tripDetails.passengers,
-              flightClass: tripDetails.flightClass,
-            },
-            tripPlan,
-            totalCost,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to send email");
+    const res = await fetch(
+      "https://wpadifvbkmgnbwztcfli.supabase.co/functions/v1/send-trip-email",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          format: emailFormat,
+          tripDetails: {
+            departureCity: tripDetails.departureCity,
+            destinationCity: tripDetails.destinationCity,
+            departureDate: tripDetails.departureDate,
+            returnDate: tripDetails.returnDate,
+            passengers: tripDetails.passengers,
+            flightClass: tripDetails.flightClass,
+          },
+          tripPlan,
+          totalCost,
+        }),
       }
+    );
 
-      toast({
-        title: "Email sent!",
-        description: `Your itinerary has been sent to ${user.email}`,
-      });
-    } catch (error: any) {
-      console.error("Error sending email:", error);
-      toast({
-        title: "Failed to send email",
-        description: error.message || "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSendingEmail(false);
+    const json = await res.json();
+    console.log("DEBUG response:", json);
+    setIsSendingEmail(false);
+
+    if (!res.ok) {
+      alert("Failed to send email");
+      return;
     }
+    alert("Email sent");
   };
 
   const getItemIcon = (type: string) => {
