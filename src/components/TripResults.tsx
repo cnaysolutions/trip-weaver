@@ -81,7 +81,9 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
     console.log("DEBUG user.email:", user?.email);
     console.log("DEBUG tripPlan:", tripPlan);
     
-    if (!user?.email) {
+    const email = user?.email || user?.user_metadata?.email;
+    
+    if (!email) {
       alert("User email is missing");
       return;
     }
@@ -97,7 +99,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: user.email,
+          email: email,
           format: emailFormat,
           tripDetails: {
             departureCity: tripDetails.departureCity,
