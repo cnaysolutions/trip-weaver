@@ -90,7 +90,7 @@ const Index = () => {
           <main className="container mx-auto px-4 py-16 max-w-2xl">
             <div className="text-center mb-12 animate-fade-in">
               <h2 className="font-display text-3xl font-semibold text-foreground mb-3">
-                Plan Your Trip
+                Plan My Holiday Cost
               </h2>
               <p className="text-muted-foreground leading-relaxed max-w-lg mx-auto">
                 Get a clear estimate of your full holiday — flights, hotel, car rental, 

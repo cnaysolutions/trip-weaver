@@ -468,16 +468,16 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
           className="w-full"
           disabled={isLoading || isNormalizing || !isFormValid}
         >
-          {isLoading || isNormalizing ? (
+        {isLoading || isNormalizing ? (
             <span className="animate-pulse">
               {isNormalizing ? "Verifying locations..." : "Preparing your itinerary..."}
             </span>
           ) : (
-            "Plan My Journey"
+            "👉 Calculate My Holiday Cost"
           )}
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Your itinerary is being prepared with care. You're always in control.
+          We use live prices to estimate your full holiday cost — nothing is booked
         </p>
       </div>
     </form>

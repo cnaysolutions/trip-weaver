@@ -16,9 +16,6 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 text-center">
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in-up">
-          <p className="text-accent font-medium tracking-widest uppercase text-sm">
-            Your Personal Travel Concierge
-          </p>
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground leading-tight">
             How much will my{" "}
             <span className="text-accent">holiday really cost?</span>
