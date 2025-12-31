@@ -90,11 +90,14 @@ const Index = () => {
           <main className="container mx-auto px-4 py-16 max-w-2xl">
             <div className="text-center mb-12 animate-fade-in">
               <h2 className="font-display text-3xl font-semibold text-foreground mb-3">
-                Begin Your Journey
+                Plan Your Trip
               </h2>
-              <p className="text-muted-foreground leading-relaxed">
-                Tell us about your ideal trip. We'll craft a complete itinerary 
-                with real-time pricing and thoughtful recommendations.
+              <p className="text-muted-foreground leading-relaxed max-w-lg mx-auto">
+                Get a clear estimate of your full holiday — flights, hotel, car rental, 
+                and daily expenses — using real-time prices.
+              </p>
+              <p className="text-muted-foreground/80 text-sm mt-2">
+                No booking. No commitment. Just clarity.
               </p>
             </div>
             <TripIntakeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
