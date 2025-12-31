@@ -13,13 +13,11 @@ export function Footer() {
                 <Compass className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <p className="font-display text-lg font-semibold">TripWeave</p>
-                <p className="text-xs text-muted-foreground">Concierge</p>
+                <p className="font-display text-lg font-semibold">Best Holiday Plan</p>
               </div>
             </div>
             <p className="text-muted-foreground text-sm max-w-sm leading-relaxed">
-              Premium travel planning that feels like a private concierge. 
-              Calm, precise, and always in your control.
+              Get a clear estimate of your full holiday cost using real-time prices.
             </p>
           </div>
 
@@ -69,7 +67,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} TripWeave Concierge. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Best Holiday Plan. All rights reserved.</p>
         </div>
       </div>
     </footer>
