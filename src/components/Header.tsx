@@ -53,9 +53,9 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
               <Compass className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-display text-xl font-semibold text-foreground tracking-tight">
-                Best Holiday Plan
-              </h1>
+            <span className="font-display text-xl font-semibold text-foreground tracking-tight">
+              Best Holiday Plan
+            </span>
             </div>
           </Link>
 
