@@ -442,3 +442,42 @@ html body.theme-dark.mode-planning {
     );
   background-attachment: fixed;
 }
+/* =========================================
+   PLANNING BACKGROUND (VISIBLE, FINAL)
+   ========================================= */
+
+body.theme-light.mode-planning {
+  background-color: #f4f6f8;
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 70% 55%, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at 45% 80%, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 90px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04) 1px, transparent 1px, transparent 140px);
+  background-attachment: fixed;
+}
+
+/* Dark mode */
+
+body.theme-dark.mode-planning {
+  background-color: #0f172a;
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    radial-gradient(circle at 70% 55%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    radial-gradient(circle at 45% 80%, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px,
+      transparent 100px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 160px
+    );
+  background-attachment: fixed;
+}
