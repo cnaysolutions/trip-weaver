@@ -376,3 +376,34 @@
     );
   background-size: cover;
 }
+
+/* =====================================
+   FORCE BACKGROUND AT BODY LEVEL
+   (Lovable + Tailwind fix)
+   ===================================== */
+
+body.theme-light.mode-planning {
+  background-color: #f4f6f8 !important;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06) 1px, transparent 1px, transparent 80px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 120px);
+}
+
+body.theme-dark.mode-planning {
+  background-color: #0f172a !important;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 90px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px,
+      transparent 140px
+    );
+}
