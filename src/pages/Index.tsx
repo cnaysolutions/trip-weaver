@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { TripIntakeForm } from "@/components/TripIntakeForm";
 import { TripResults } from "@/components/TripResults";
 import { Footer } from "@/components/Footer";
 import { generateMockTripPlan } from "@/data/mockTripData";
+import { useTheme } from "@/hooks/useTheme";
 import type { TripDetails, TripPlan } from "@/types/trip";
 
 const Index = () => {
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { theme, mode, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
 
   const handleFormSubmit = async (details: TripDetails) => {
     setIsLoading(true);
@@ -22,6 +24,9 @@ const Index = () => {
     const plan = generateMockTripPlan(details);
     setTripPlan(plan);
     setIsLoading(false);
+    
+    // Switch to results mode
+    setResultsMode();
 
     // Scroll to results
     setTimeout(() => {
@@ -78,11 +83,12 @@ const Index = () => {
   const handleReset = () => {
     setTripDetails(null);
     setTripPlan(null);
+    setPlanningMode();
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className={`app-shell ${themeClass} ${modeClass}`}>
+      <Header theme={theme} onToggleTheme={toggleTheme} />
 
       {!tripPlan ? (
         <>
