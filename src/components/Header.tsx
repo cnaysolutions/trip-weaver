@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Compass, LogOut, User } from "lucide-react";
+import { Compass, LogOut, User, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +12,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
-export function Header() {
+interface HeaderProps {
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
+}
+
+export function Header({ theme, onToggleTheme }: HeaderProps) {
   const navigate = useNavigate();
   const { user, loading, signOut } = useAuth();
 
@@ -54,7 +59,24 @@ export function Header() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            {onToggleTheme && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleTheme}
+                className="h-9 w-9"
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+
             {!loading && !user && (
               <>
                 <Link
