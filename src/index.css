@@ -576,3 +576,43 @@ body.theme-dark.mode-planning {
 .theme-dark .bg-success\/5 {
   background-color: hsl(160 40% 45% / 0.05) !important;
 }
+
+/* =========================================
+   SUMMARY / ESTIMATED TOTAL CARD FIX
+   Solid opaque background with high contrast
+   ========================================= */
+
+.bg-gradient-hero {
+  background: linear-gradient(135deg, hsl(220 35% 22%) 0%, hsl(220 40% 15%) 100%) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+
+.dark .bg-gradient-hero,
+.theme-dark .bg-gradient-hero {
+  background: linear-gradient(135deg, hsl(220 35% 18%) 0%, hsl(220 40% 12%) 100%) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+
+/* Force white text in summary card */
+.bg-gradient-hero,
+.bg-gradient-hero * {
+  color: #ffffff !important;
+}
+
+.bg-gradient-hero .text-primary-foreground\/80,
+.bg-gradient-hero p.text-primary-foreground\/80 {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Ensure summary card text visibility */
+.dark .bg-gradient-hero *,
+.theme-dark .bg-gradient-hero * {
+  color: #ffffff !important;
+}
+
+.dark .bg-gradient-hero .text-primary-foreground\/80,
+.theme-dark .bg-gradient-hero .text-primary-foreground\/80 {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
