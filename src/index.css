@@ -1,3 +1,9 @@
+.theme-light.mode-planning {
+  background:
+    linear-gradient(rgba(247, 248, 250, 0.96), rgba(247, 248, 250, 0.96)),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.035), rgba(0, 0, 0, 0.035) 1px, transparent 1px, transparent 22px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.03) 1px, transparent 1px, transparent 22px);
+}
 .app-shell {
   outline: 6px solid lime !important;
 }
