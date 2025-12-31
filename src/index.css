@@ -481,3 +481,98 @@ body.theme-dark.mode-planning {
     );
   background-attachment: fixed;
 }
+
+/* =========================================
+   FORM CARD CONTRAST FIX (DARK MODE)
+   Cards always have solid light background
+   with dark text for readability
+   ========================================= */
+
+.dark [data-slot="card"],
+.theme-dark [data-slot="card"],
+.dark .rounded-lg.border,
+.theme-dark .rounded-lg.border {
+  background-color: #fefefe !important;
+  color: #1f2937 !important;
+}
+
+/* Force all text inside cards to be dark in dark mode */
+.dark [data-slot="card"] *,
+.theme-dark [data-slot="card"] *,
+.dark .rounded-lg.border.bg-card *,
+.theme-dark .rounded-lg.border.bg-card * {
+  color: #1f2937 !important;
+}
+
+/* Preserve muted text colors inside cards */
+.dark [data-slot="card"] .text-muted-foreground,
+.theme-dark [data-slot="card"] .text-muted-foreground,
+.dark .rounded-lg.border .text-muted-foreground,
+.theme-dark .rounded-lg.border .text-muted-foreground {
+  color: #6b7280 !important;
+}
+
+/* Preserve accent/icon colors */
+.dark [data-slot="card"] .text-accent,
+.theme-dark [data-slot="card"] .text-accent,
+.dark .rounded-lg.border .text-accent,
+.theme-dark .rounded-lg.border .text-accent {
+  color: hsl(40 45% 55%) !important;
+}
+
+/* Input fields inside cards - solid white background, dark text */
+.dark input,
+.theme-dark input,
+.dark [data-slot="card"] input,
+.theme-dark [data-slot="card"] input {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #d1d5db !important;
+}
+
+.dark input::placeholder,
+.theme-dark input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Buttons inside cards */
+.dark [data-slot="card"] button,
+.theme-dark [data-slot="card"] button,
+.dark .rounded-lg.border button,
+.theme-dark .rounded-lg.border button {
+  color: #1f2937 !important;
+}
+
+/* Calendar/Popover content - solid background */
+.dark [data-radix-popper-content-wrapper] > div,
+.theme-dark [data-radix-popper-content-wrapper] > div {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.dark [data-radix-popper-content-wrapper] *,
+.theme-dark [data-radix-popper-content-wrapper] * {
+  color: #1f2937 !important;
+}
+
+/* Preserve destructive text color */
+.dark .text-destructive,
+.theme-dark .text-destructive {
+  color: hsl(0 60% 50%) !important;
+}
+
+/* Preserve success styling */
+.dark .border-success,
+.theme-dark .border-success {
+  border-color: hsl(160 40% 45%) !important;
+}
+
+.dark .bg-success,
+.theme-dark .bg-success {
+  background-color: hsl(160 40% 45%) !important;
+}
+
+.dark .bg-success\/5,
+.theme-dark .bg-success\/5 {
+  background-color: hsl(160 40% 45% / 0.05) !important;
+}
