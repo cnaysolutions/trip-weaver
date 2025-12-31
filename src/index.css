@@ -354,18 +354,25 @@
     box-shadow: var(--shadow-glow);
   }
 }
-
-/* =========================================
-   FORCE VISIBLE PLANNING BACKGROUND (FINAL)
-   ========================================= */
-
-.app-shell.theme-light.mode-planning {
-  background-color: #f4f6f8 !important;
+.app-shell.theme-dark.mode-planning {
+  background-color: #0f172a !important;
   background-image:
-    radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
-    radial-gradient(circle at 70% 60%, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    radial-gradient(circle at 40% 80%, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04) 1px, transparent 1px, transparent 80px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.035), rgba(0, 0, 0, 0.035) 1px, transparent 1px, transparent 120px);
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px,
+      transparent 90px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 140px
+    );
   background-size: cover;
 }
