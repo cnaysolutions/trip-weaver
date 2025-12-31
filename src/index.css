@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+body {
+  background: red !important;
+}
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -21,7 +24,7 @@
 @layer base {
   :root {
     /* TripWeave Concierge - Premium Travel Design System */
-    
+
     /* Core palette */
     --background: 45 30% 97%; /* Soft ivory */
     --foreground: 220 30% 18%; /* Deep charcoal navy */
@@ -142,11 +145,16 @@
 
   body {
     @apply antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Cormorant Garamond", Georgia, serif;
     @apply font-medium tracking-tight;
   }
 
@@ -164,15 +172,15 @@
 .app-shell {
   min-height: 100vh;
   width: 100%;
-  transition: background 0.6s ease, color 0.3s ease;
+  transition:
+    background 0.6s ease,
+    color 0.3s ease;
   background-attachment: fixed;
 }
 
 /* Light Mode - Planning */
 .theme-light.mode-planning {
-  background:
-    linear-gradient(var(--bg-light-planning), var(--bg-light-planning)),
-    url("/assets/bg-world-map-soft.png");
+  background: linear-gradient(var(--bg-light-planning), var(--bg-light-planning)), url("/assets/bg-world-map-soft.png");
   background-size: cover;
   background-position: center;
   color: var(--text-light);
@@ -181,8 +189,7 @@
 /* Light Mode - Results */
 .theme-light.mode-results {
   background:
-    linear-gradient(var(--bg-light-results), var(--bg-light-results)),
-    url("/assets/bg-planning-desk-soft.png");
+    linear-gradient(var(--bg-light-results), var(--bg-light-results)), url("/assets/bg-planning-desk-soft.png");
   background-size: cover;
   background-position: center;
   color: var(--text-light);
@@ -190,9 +197,7 @@
 
 /* Dark Mode - Planning */
 .theme-dark.mode-planning {
-  background:
-    linear-gradient(var(--bg-dark-planning), var(--bg-dark-planning)),
-    url("/assets/bg-world-map-dark.png");
+  background: linear-gradient(var(--bg-dark-planning), var(--bg-dark-planning)), url("/assets/bg-world-map-dark.png");
   background-size: cover;
   background-position: center;
   color: var(--text-dark);
@@ -200,9 +205,7 @@
 
 /* Dark Mode - Results */
 .theme-dark.mode-results {
-  background:
-    linear-gradient(var(--bg-dark-results), var(--bg-dark-results)),
-    url("/assets/bg-desk-dark.png");
+  background: linear-gradient(var(--bg-dark-results), var(--bg-dark-results)), url("/assets/bg-desk-dark.png");
   background-size: cover;
   background-position: center;
   color: var(--text-dark);
@@ -230,7 +233,7 @@
   }
 
   .card-premium::before {
-    content: '';
+    content: "";
     @apply absolute inset-0 opacity-0;
     background: var(--gradient-accent);
     transition: opacity 0.3s ease;
@@ -257,11 +260,21 @@
   }
 
   /* Staggered animation delays */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+  .stagger-4 {
+    animation-delay: 0.4s;
+  }
+  .stagger-5 {
+    animation-delay: 0.5s;
+  }
 
   /* Toggle states */
   .toggle-included {
@@ -284,11 +297,11 @@
   }
 
   .font-display {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: "Cormorant Garamond", Georgia, serif;
   }
 
   .font-body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
   }
 
   /* Gradients as utilities */
