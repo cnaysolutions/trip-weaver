@@ -20,8 +20,8 @@ export function HeroSection() {
             Your Personal Travel Concierge
           </p>
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground leading-tight">
-            Every Journey,{" "}
-            <span className="text-accent">Thoughtfully Crafted</span>
+            How much will my{" "}
+            <span className="text-accent">holiday really cost?</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
             From flights to daily experiences, we orchestrate every detail of your trip.
