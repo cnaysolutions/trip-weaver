@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { TripIntakeForm } from "@/components/TripIntakeForm";
 import { TripResults } from "@/components/TripResults";
 import { generateMockTripPlan } from "@/data/mockTripData";
+import { useTheme } from "@/hooks/useTheme";
 import type { TripDetails, TripPlan } from "@/types/trip";
 
 function setMetaTag(name: string, content: string) {
@@ -36,9 +37,10 @@ export default function TripIntake() {
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { theme, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
 
   useEffect(() => {
-    document.title = "Plan a Trip | TripWeave Concierge";
+    document.title = "Plan a Trip | Best Holiday Plan";
     setMetaTag(
       "description",
       "Plan an international trip with calm guidance, real prices, and reversible choices."
@@ -56,6 +58,9 @@ export default function TripIntake() {
     const plan = generateMockTripPlan(details);
     setTripPlan(plan);
     setIsLoading(false);
+    
+    // Switch to results mode
+    setResultsMode();
 
     // Scroll to results
     setTimeout(() => {
@@ -110,11 +115,12 @@ export default function TripIntake() {
   const handleReset = () => {
     setTripDetails(null);
     setTripPlan(null);
+    setPlanningMode();
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+    <div className={`app-shell ${themeClass} ${modeClass} flex flex-col`}>
+      <Header theme={theme} onToggleTheme={toggleTheme} />
 
       <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl">
         {!tripPlan ? (
@@ -122,7 +128,7 @@ export default function TripIntake() {
             <header className="text-center mb-12 animate-fade-in">
               <h1 className="font-display text-3xl font-semibold text-foreground mb-3">Plan Your Trip</h1>
               <p className="text-muted-foreground leading-relaxed">
-                Share the essentials. We’ll orchestrate the details—calmly, with full control.
+                Share the essentials. We'll orchestrate the details—calmly, with full control.
               </p>
             </header>
 
