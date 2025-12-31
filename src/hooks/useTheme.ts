@@ -1,48 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-type Theme = 'light' | 'dark';
-type Mode = 'planning' | 'results';
+type Theme = "light" | "dark";
+type Mode = "planning" | "results";
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check for stored preference or system preference
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('theme') as Theme | null;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("theme") as Theme | null;
       if (stored) return stored;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
-    return 'light';
+    return "light";
   });
 
-  const [mode, setMode] = useState<Mode>('planning');
+  const [mode, setMode] = useState<Mode>("planning");
 
   useEffect(() => {
-    // Store theme preference
-    localStorage.setItem('theme', theme);
-    
-    // Update document class for dark mode CSS variables
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+    localStorage.setItem("theme", theme);
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    // Clear old classes
+    body.classList.remove("theme-light", "theme-dark", "mode-planning", "mode-results");
+
+    // Apply current state to BODY (CRITICAL)
+    body.classList.add(`theme-${theme}`, `mode-${mode}`);
+
+    // Keep Tailwind dark mode working
+    if (theme === "dark") {
+      html.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      html.classList.remove("dark");
     }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  const setResultsMode = () => setMode('results');
-  const setPlanningMode = () => setMode('planning');
+  }, [theme, mode]);
 
   return {
     theme,
     mode,
-    toggleTheme,
-    setTheme,
-    setMode,
-    setResultsMode,
-    setPlanningMode,
+    toggleTheme: () => setTheme((prev) => (prev === "light" ? "dark" : "light")),
+    setResultsMode: () => setMode("results"),
+    setPlanningMode: () => setMode("planning"),
+
+    // Still useful for components if needed
     themeClass: `theme-${theme}`,
     modeClass: `mode-${mode}`,
   };
