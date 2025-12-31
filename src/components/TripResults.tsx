@@ -66,26 +66,28 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
 
   const totalCost = useMemo(() => {
     let cost = 0;
+    const totalPassengers = tripDetails.passengers.adults + tripDetails.passengers.children;
     
+    // Flights are already priced per person
     if (tripPlan.outboundFlight?.included) {
-      cost += tripPlan.outboundFlight.pricePerPerson * 
-        (tripDetails.passengers.adults + tripDetails.passengers.children);
+      cost += tripPlan.outboundFlight.pricePerPerson * totalPassengers;
     }
     if (tripPlan.returnFlight?.included) {
-      cost += tripPlan.returnFlight.pricePerPerson * 
-        (tripDetails.passengers.adults + tripDetails.passengers.children);
+      cost += tripPlan.returnFlight.pricePerPerson * totalPassengers;
     }
+    
+    // Hotel, car rental, and itinerary costs multiplied by passengers
     if (tripPlan.carRental?.included) {
-      cost += tripPlan.carRental.totalPrice;
+      cost += tripPlan.carRental.totalPrice * totalPassengers;
     }
     if (tripPlan.hotel?.included) {
-      cost += tripPlan.hotel.totalPrice;
+      cost += tripPlan.hotel.totalPrice * totalPassengers;
     }
 
     tripPlan.itinerary.forEach((day) => {
       day.items.forEach((item) => {
         if (item.included && item.cost) {
-          cost += item.cost;
+          cost += item.cost * totalPassengers;
         }
       });
     });
