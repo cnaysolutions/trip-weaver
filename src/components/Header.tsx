@@ -49,9 +49,8 @@ export function Header() {
             </div>
             <div>
               <h1 className="font-display text-xl font-semibold text-foreground tracking-tight">
-                TripWeave
+                Best Holiday Plan
               </h1>
-              <p className="text-xs text-muted-foreground -mt-0.5">Concierge</p>
             </div>
           </Link>
 
