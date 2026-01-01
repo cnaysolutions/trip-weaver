@@ -244,12 +244,26 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const requestData: TripEmailRequest = await req.json();
     
-    console.log("Received request with email:", requestData.email);
-    console.log("Data received:", JSON.stringify(requestData.data, null, 2));
-    
-    if (!requestData.email || !requestData.data) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!requestData.email || !emailRegex.test(requestData.email)) {
       return new Response(
-        JSON.stringify({ error: "Missing email or data" }),
+        JSON.stringify({ error: "Invalid email address" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate email length (prevent injection)
+    if (requestData.email.length > 254) {
+      return new Response(
+        JSON.stringify({ error: "Email address too long" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
+    if (!requestData.data) {
+      return new Response(
+        JSON.stringify({ error: "Missing trip data" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -264,17 +278,15 @@ const handler = async (req: Request): Promise<Response> => {
       html,
     });
 
-    console.log("Email sent successfully:", emailResponse);
-
     return new Response(JSON.stringify({ success: true, id: emailResponse.id }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error sending trip email:", errorMessage);
+    console.error("Email sending failed");
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Failed to send email" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
