@@ -104,48 +104,60 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
   };
 
   const sendEmail = async () => {
-    const loggedInEmail =
-      user?.email ||
-      user?.user_metadata?.email;
+    const loggedInEmail = user?.email || user?.user_metadata?.email;
 
-    // 🔒 TEMPORARY RESTRICTION (until domain verified)
-    if (loggedInEmail !== "patchnetit@gmail.com") {
-      alert(
-        "Email sending is temporarily limited while setup is completing. Please check back shortly."
-      );
+    if (!loggedInEmail) {
+      toast({
+        title: "Email not available",
+        description: "Please sign in to send the itinerary to your email.",
+        variant: "destructive",
+      });
       return;
     }
 
     if (!tripPlan) {
-      alert("Please run a search first.");
+      toast({
+        title: "No itinerary",
+        description: "Please complete a trip search first.",
+        variant: "destructive",
+      });
       return;
     }
-
-    console.log("Sending email to:", loggedInEmail);
 
     setIsSendingEmail(true);
-    const res = await fetch(
-      "https://wpadifvbkmgnbwztcfli.supabase.co/functions/v1/send-trip-email",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: "patchnetit@gmail.com", // 🔒 force test email
-          data: tripPlan,
-        }),
+    
+    try {
+      const res = await fetch(
+        "https://wpadifvbkmgnbwztcfli.supabase.co/functions/v1/send-trip-email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: loggedInEmail,
+            data: tripPlan,
+          }),
+        }
+      );
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to send email");
       }
-    );
 
-    const json = await res.json();
-    console.log("Edge function response:", json);
-    setIsSendingEmail(false);
-
-    if (!res.ok) {
-      alert("Failed to send email.");
-      return;
+      toast({
+        title: "Email sent!",
+        description: "Check your inbox for your trip itinerary.",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to send email",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
     }
-
-    alert("Email sent to your inbox!");
   };
 
   const getItemIcon = (type: string) => {

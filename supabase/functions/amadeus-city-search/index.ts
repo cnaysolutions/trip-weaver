@@ -13,20 +13,21 @@ serve(async (req) => {
 
   try {
     const { keyword } = await req.json();
-    console.log('City search request for keyword:', keyword);
 
-    if (!keyword || keyword.length < 2) {
+    // Validate keyword length to prevent abuse
+    if (!keyword || typeof keyword !== 'string' || keyword.length < 2) {
       return new Response(
         JSON.stringify({ locations: [] }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
+    // Limit keyword length to prevent abuse
+    const sanitizedKeyword = keyword.slice(0, 50);
+    
     // Mock data that matches the Location type expected by frontend
     // TODO: Replace with real Amadeus API integration
-    const mockLocations = getMockLocations(keyword);
-    
-    console.log('Returning locations:', mockLocations.length);
+    const mockLocations = getMockLocations(sanitizedKeyword);
 
     return new Response(
       JSON.stringify({ locations: mockLocations }),
