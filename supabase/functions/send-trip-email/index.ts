@@ -278,7 +278,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending email via Resend...");
     const emailResponse = await sendEmailViaResend({
-      from: "TripWeave <onboarding@resend.dev>",
+      from: "Best Travel Plan <contacts@best-travel-plan.cloud>",
       to: [requestData.email],
       subject,
       html,
