@@ -134,7 +134,10 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: loggedInEmail,
-            data: tripPlan,
+            data: {
+              ...tripPlan,
+              passengers: tripDetails.passengers.adults + tripDetails.passengers.children
+            },
           }),
         }
       );
@@ -311,43 +314,35 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
                         <span key={i} className="text-accent">★</span>
                       ))}
                     </div>
+                    <p className="text-sm text-muted-foreground mt-1">{tripPlan.hotel.address}</p>
                   </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {tripPlan.hotel.address}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Plane className="h-4 w-4" />
-                      {tripPlan.hotel.distanceFromAirport} from airport
-                    </span>
-                  </div>
-                  <GoogleMapsLink 
-                    query={`${tripPlan.hotel.name}, ${tripPlan.hotel.address}`} 
-                    className="mt-2"
-                  />
                   <div className="flex flex-wrap gap-2">
                     {tripPlan.hotel.amenities.slice(0, 4).map((amenity) => (
                       <span
                         key={amenity}
-                        className="text-xs px-2 py-1 bg-secondary rounded-full text-secondary-foreground"
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground"
                       >
                         {amenity}
                       </span>
                     ))}
                   </div>
+                  <GoogleMapsLink 
+                    query={tripPlan.hotel.address} 
+                    className="mt-2"
+                  />
                 </div>
                 <div className="text-right ml-4">
-                  <p className="text-sm text-muted-foreground">
-                    {formatCurrency(tripPlan.hotel.pricePerNight)}/night
-                  </p>
-                  <p className="font-display text-2xl font-semibold">
-                    {formatCurrency(tripPlan.hotel.totalPrice)}
-                  </p>
+                  <div className="mb-2">
+                    <p className="text-sm text-muted-foreground">
+                      {formatCurrency(tripPlan.hotel.pricePerNight)}/night
+                    </p>
+                    <p className="font-display text-2xl font-semibold">
+                      {formatCurrency(tripPlan.hotel.totalPrice)}
+                    </p>
+                  </div>
                   <Button
                     variant={tripPlan.hotel.included ? "soft" : "outline"}
                     size="sm"
-                    className="mt-2"
                     onClick={() => onToggleItem("hotel", tripPlan.hotel!.id)}
                   >
                     {tripPlan.hotel.included ? (
@@ -364,27 +359,45 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
               </div>
             </CardContent>
           </Card>
-          <p className="text-sm text-muted-foreground italic">
-            Hotels shown are for reference only and cannot be booked through this platform.
-          </p>
         </div>
       )}
 
-      {/* Daily Itinerary */}
-      <div className="space-y-4">
-        <h3 className="font-display text-xl font-medium">Daily Itinerary</h3>
-        
+      {/* Itinerary Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-xl font-medium flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-accent" />
+            Daily Plan
+          </h3>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="soft"
+              size="sm"
+              onClick={sendEmail}
+              disabled={isSendingEmail}
+              className="gap-2"
+            >
+              {isSendingEmail ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              Send to my email
+            </Button>
+          </div>
+        </div>
+
         {/* Day Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {tripPlan.itinerary.map((day, index) => (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {tripPlan.itinerary.map((day, idx) => (
             <button
               key={day.day}
-              onClick={() => setActiveDay(index)}
+              onClick={() => setActiveDay(idx)}
               className={cn(
-                "px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200",
-                activeDay === index
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                "px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                activeDay === idx
+                  ? "bg-accent text-accent-foreground shadow-md"
+                  : "bg-card text-muted-foreground hover:bg-secondary"
               )}
             >
               Day {day.day}
@@ -393,7 +406,18 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
         </div>
 
         {/* Day Content */}
-        {tripPlan.itinerary[activeDay] && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <div>
+              <h4 className="font-medium text-lg">
+                {tripPlan.itinerary[activeDay].date}
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {tripPlan.itinerary[activeDay].items.filter(i => i.included).length} activities planned
+              </p>
+            </div>
+          </div>
+
           <DayTimeline
             day={tripPlan.itinerary[activeDay]}
             onToggleItem={(itemId) => onToggleItem("itinerary", itemId)}
@@ -401,56 +425,31 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
             getItemIcon={getItemIcon}
             destinationCity={tripDetails.destinationCity}
           />
-        )}
+        </div>
       </div>
 
-      {/* Total Cost Summary */}
-      <Card variant="elevated" className="bg-gradient-hero text-primary-foreground">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-primary-foreground/80 text-sm">Estimated Total</p>
-              <p className="font-display text-4xl font-semibold mt-1">
-                {formatCurrency(totalCost)}
-              </p>
+      {/* Total Cost Footer */}
+      <div className="sticky bottom-6 left-0 right-0 z-10">
+        <Card className="bg-primary text-primary-foreground shadow-2xl border-none overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          <CardContent className="p-6 relative">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-primary-foreground/70 text-sm font-medium uppercase tracking-wider">
+                  Estimated Total Cost
+                </p>
+                <p className="text-xs text-primary-foreground/50 mt-0.5">
+                  Based on {tripDetails.passengers.adults + tripDetails.passengers.children} passengers
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-display text-4xl font-bold text-accent">
+                  {formatCurrency(totalCost)}
+                </p>
+              </div>
             </div>
-            <div className="text-right text-primary-foreground/80 text-sm">
-              <p>Costs adjust instantly as you refine.</p>
-              <p>You're always in control.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Send to Email Section */}
-      <div className="flex items-center justify-end gap-3">
-        <select
-          value={emailFormat}
-          onChange={(e) => setEmailFormat(e.target.value as "text" | "html")}
-          className="px-3 py-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-          disabled={isSendingEmail}
-        >
-          <option value="html">Formatted HTML</option>
-          <option value="text">Plain Text</option>
-        </select>
-        <Button
-          variant="outline"
-          onClick={sendEmail}
-          disabled={isSendingEmail}
-          className="gap-2"
-        >
-          {isSendingEmail ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Sending...
-            </>
-          ) : (
-            <>
-              <Mail className="h-4 w-4" />
-              Send to my email
-            </>
-          )}
-        </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -463,7 +462,7 @@ function FlightCard({
   onToggle,
   formatCurrency,
 }: {
-  flight: NonNullable<TripPlan["outboundFlight"]>;
+  flight: any;
   label: string;
   passengers: number;
   onToggle: () => void;
@@ -477,15 +476,15 @@ function FlightCard({
         !flight.included && "opacity-60"
       )}
     >
-      <CardHeader className="pb-3">
+      <CardContent className="p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{label}</span>
-          <span className="text-xs font-medium px-2 py-1 bg-secondary rounded-full capitalize">
-            {flight.class}
+          <span className="text-[10px] font-bold uppercase tracking-widest text-accent bg-accent/10 px-2 py-0.5 rounded">
+            {label}
+          </span>
+          <span className="text-xs text-muted-foreground font-medium">
+            {flight.class.charAt(0).toUpperCase() + flight.class.slice(1)}
           </span>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="text-center">
             <p className="font-display text-2xl font-semibold">{flight.originCode}</p>
@@ -496,7 +495,7 @@ function FlightCard({
             />
           </div>
           <div className="flex-1 px-4 flex flex-col items-center">
-            <p className="text-xs text-muted-foreground mb-1">{flight.duration}</p>
+            <p className="text-[10px] text-muted-foreground mb-1">{flight.duration}</p>
             <div className="w-full flex items-center">
               <div className="h-px flex-1 bg-accent/30" />
               <Plane className="h-4 w-4 text-accent mx-2 rotate-90" />
