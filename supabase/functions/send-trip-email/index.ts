@@ -96,10 +96,10 @@ function calculateTotalCost(data: TripData): number {
     total += data.returnFlight.pricePerPerson * passengers;
   }
   if (data.carRental?.included) {
-    total += data.carRental.totalPrice * passengers;
+    total += data.carRental.totalPrice;
   }
   if (data.hotel?.included) {
-    total += data.hotel.totalPrice * passengers;
+    total += data.hotel.totalPrice;
   }
   
   data.itinerary?.forEach((day: DayItinerary) => {
@@ -173,7 +173,7 @@ function generateHtmlEmail(tripData: TripData): string {
               <div style="background: #f8f5f0; border-radius: 8px; padding: 16px;">
                 <div style="font-size: 18px; font-weight: 600;">${tripData.carRental.vehicleName}</div>
                 <div style="color: #666; margin-top: 4px;">${tripData.carRental.company}</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.carRental.totalPrice * passengers)}</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.carRental.totalPrice)}</div>
               </div>
             </td>
           </tr>
@@ -187,7 +187,7 @@ function generateHtmlEmail(tripData: TripData): string {
               <div style="background: #f8f5f0; border-radius: 8px; padding: 16px;">
                 <div style="font-size: 18px; font-weight: 600;">${tripData.hotel.name}</div>
                 <div style="color: #666; margin-top: 4px;">${formatCurrency(tripData.hotel.pricePerNight)}/night</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.hotel.totalPrice * passengers)} total</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.hotel.totalPrice)} total</div>
               </div>
             </td>
           </tr>
