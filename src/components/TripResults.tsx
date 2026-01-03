@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import type { TripDetails, TripPlan, DayItinerary } from "@/types/trip";
 
 // Helper function to generate Google Maps URL
@@ -76,12 +77,12 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
       cost += tripPlan.returnFlight.pricePerPerson * totalPassengers;
     }
     
-    // Hotel, car rental, and itinerary costs multiplied by passengers
+    // Hotel and car rental are total prices for the group
     if (tripPlan.carRental?.included) {
-      cost += tripPlan.carRental.totalPrice * totalPassengers;
+      cost += tripPlan.carRental.totalPrice;
     }
     if (tripPlan.hotel?.included) {
-      cost += tripPlan.hotel.totalPrice * totalPassengers;
+      cost += tripPlan.hotel.totalPrice;
     }
 
     tripPlan.itinerary.forEach((day) => {
