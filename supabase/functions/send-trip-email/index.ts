@@ -222,6 +222,20 @@ function generateHtmlEmail(tripData: TripData): string {
             </td>
           </tr>
 
+          <!-- Debug Info -->
+          <tr>
+            <td style="padding: 24px; background-color: #f0f0f0; border-top: 1px solid #ddd; color: #666; font-size: 10px;">
+              <p style="margin: 0; font-weight: bold;">DEBUG INFO (Please share with support):</p>
+              <p style="margin: 4px 0 0;">Passengers: ${passengers}</p>
+              <p style="margin: 2px 0 0;">Calculated Total: ${totalCost}</p>
+              <p style="margin: 2px 0 0;">Raw Data: ${JSON.stringify({
+                outbound: tripData.outboundFlight?.pricePerPerson,
+                return: tripData.returnFlight?.pricePerPerson,
+                car: tripData.carRental?.totalPrice,
+                hotel: tripData.hotel?.totalPrice
+              })}</p>
+            </td>
+          </tr>
           <!-- Footer -->
           <tr>
             <td style="padding: 24px; text-align: center; color: #999; font-size: 12px;">
