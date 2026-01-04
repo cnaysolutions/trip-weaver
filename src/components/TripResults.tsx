@@ -65,10 +65,13 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // ABSOLUTE FINAL: Calculate passengers by looking at the data structure directly
+  // Calculate total passengers: adults + children + infants
   const totalPassengers = useMemo(() => {
-    const count = (tripDetails?.passengers?.adults || 0) + (tripDetails?.passengers?.children || 0);
-    return count > 0 ? count : 1;
+    const adults = tripDetails?.passengers?.adults || 0;
+    const children = tripDetails?.passengers?.children || 0;
+    const infants = tripDetails?.passengers?.infants || 0;
+    const count = adults + children + infants;
+    return count; // Return 0 if no passengers - don't assume
   }, [tripDetails]);
 
   const totalCost = useMemo(() => {
@@ -119,22 +122,17 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
     }
 
     setIsSendingEmail(true);
-    
-    // ABSOLUTE FINAL FIX: If tripDetails is broken, we manually find the passenger count 
-    // by looking at the total cost vs per-person cost in the flight data.
-    let finalCount = totalPassengers;
-    
-    // Safety check: if it's still 1, try to "detect" it from the flight data
-    if (finalCount === 1 && tripPlan.outboundFlight) {
-      // This is a fallback in case tripDetails is completely lost
-      const adults = tripDetails?.passengers?.adults || 0;
-      const children = tripDetails?.passengers?.children || 0;
-      if (adults + children > 0) {
-        finalCount = adults + children;
-      }
-    }
 
-    console.log("ABSOLUTE FINAL SEND: Passengers =", finalCount);
+    // Use the exact same calculation as totalCost - no assumptions
+    if (totalPassengers === 0) {
+      toast({
+        title: "Missing passenger information",
+        description: "Please go back and specify the number of passengers.",
+        variant: "destructive",
+      });
+      setIsSendingEmail(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke("send-trip-email", {
@@ -142,7 +140,8 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
           email: loggedInEmail,
           data: {
             ...tripPlan,
-            passengers: finalCount
+            passengers: totalPassengers,
+            totalCost: totalCost, // Send pre-calculated total to ensure match
           },
         },
       });
@@ -151,7 +150,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
 
       toast({
         title: "Email sent!",
-        description: `Itinerary sent for ${finalCount} passengers.`,
+        description: `Itinerary sent for ${totalPassengers} passenger${totalPassengers !== 1 ? 's' : ''}.`,
       });
     } catch (error) {
       console.error("Failed to send email:", error);
