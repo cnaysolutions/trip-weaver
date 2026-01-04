@@ -220,13 +220,22 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const requestData: TripEmailRequest = await req.json();
     
-    // Validate passenger count
-    if (!requestData.data.passengers || requestData.data.passengers <= 0) {
+    // Extract passenger count - use explicit passengers field, no defaults
+    const passengers = requestData.data?.passengers;
+    
+    console.log("Received request - passengers:", passengers, "totalCost:", requestData.data?.totalCost);
+    
+    // Validate passenger count exists and is positive
+    if (typeof passengers !== 'number' || passengers <= 0 || !Number.isInteger(passengers)) {
+      console.error("Invalid passenger count:", passengers);
       return new Response(
-        JSON.stringify({ error: "Invalid passenger count" }),
+        JSON.stringify({ error: "Invalid passenger count - must be a positive integer" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+    
+    // Ensure passengers is set on data for email generation
+    requestData.data.passengers = passengers;
     
     const subject = "Your TripWeave Itinerary";
     const html = generateHtmlEmail(requestData.data);

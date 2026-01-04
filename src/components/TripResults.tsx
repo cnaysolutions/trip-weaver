@@ -135,15 +135,20 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-trip-email", {
-        body: {
-          email: loggedInEmail,
-          data: {
-            ...tripPlan,
-            passengers: totalPassengers,
-            totalCost: totalCost, // Send pre-calculated total to ensure match
-          },
+      // Build request with explicit passengerCount from calculated totalPassengers
+      const passengerCount = totalPassengers;
+      
+      const requestBody = {
+        email: loggedInEmail,
+        data: {
+          ...tripPlan,
+          passengers: passengerCount,
+          totalCost: totalCost,
         },
+      };
+
+      const { data, error } = await supabase.functions.invoke("send-trip-email", {
+        body: requestBody,
       });
 
       if (error) throw error;
