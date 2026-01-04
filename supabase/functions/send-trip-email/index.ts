@@ -135,7 +135,7 @@ function generateHtmlEmail(tripData: TripData): string {
             <td style="background: linear-gradient(135deg, #1a2744 0%, #2d3c5a 100%); padding: 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">TripWeave Itinerary</h1>
               <p style="margin: 16px 0 0; color: rgba(255,255,255,0.8); font-size: 16px;">
-                Your personalized travel plan
+                Your personalized travel plan for ${passengers} passengers
               </p>
             </td>
           </tr>
@@ -150,7 +150,7 @@ function generateHtmlEmail(tripData: TripData): string {
                 <div style="font-size: 12px; color: #666; margin-bottom: 8px;">OUTBOUND</div>
                 <div style="font-size: 20px; font-weight: 600;">${tripData.outboundFlight.originCode} → ${tripData.outboundFlight.destinationCode}</div>
                 <div style="color: #666; margin-top: 4px;">${tripData.outboundFlight.airline} • ${tripData.outboundFlight.departureTime} - ${tripData.outboundFlight.arrivalTime}</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.outboundFlight.pricePerPerson * passengers)}</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.outboundFlight.pricePerPerson * passengers)} (${formatCurrency(tripData.outboundFlight.pricePerPerson)} x ${passengers})</div>
               </div>
               ` : ""}
               ${tripData.returnFlight?.included ? `
@@ -158,7 +158,7 @@ function generateHtmlEmail(tripData: TripData): string {
                 <div style="font-size: 12px; color: #666; margin-bottom: 8px;">RETURN</div>
                 <div style="font-size: 20px; font-weight: 600;">${tripData.returnFlight.originCode} → ${tripData.returnFlight.destinationCode}</div>
                 <div style="color: #666; margin-top: 4px;">${tripData.returnFlight.airline} • ${tripData.returnFlight.departureTime} - ${tripData.returnFlight.arrivalTime}</div>
-                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.returnFlight.pricePerPerson * passengers)}</div>
+                <div style="color: #c9a962; font-weight: 600; margin-top: 8px;">${formatCurrency(tripData.returnFlight.pricePerPerson * passengers)} (${formatCurrency(tripData.returnFlight.pricePerPerson)} x ${passengers})</div>
               </div>
               ` : ""}
             </td>
@@ -217,7 +217,7 @@ function generateHtmlEmail(tripData: TripData): string {
           <!-- Total -->
           <tr>
             <td style="background: linear-gradient(135deg, #1a2744 0%, #2d3c5a 100%); padding: 32px; text-align: center;">
-              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 14px;">ESTIMATED TOTAL</p>
+              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 14px;">ESTIMATED TOTAL FOR ${passengers} PASSENGERS</p>
               <p style="margin: 8px 0 0; color: #c9a962; font-size: 36px; font-weight: 600;">${formatCurrency(totalCost)}</p>
             </td>
           </tr>
@@ -225,8 +225,8 @@ function generateHtmlEmail(tripData: TripData): string {
           <!-- Debug Info -->
           <tr>
             <td style="padding: 24px; background-color: #f0f0f0; border-top: 1px solid #ddd; color: #666; font-size: 10px;">
-              <p style="margin: 0; font-weight: bold;">DEBUG INFO (Please share with support):</p>
-              <p style="margin: 4px 0 0;">Passengers: ${passengers}</p>
+              <p style="margin: 0; font-weight: bold;">NUCLEAR DEBUG INFO:</p>
+              <p style="margin: 4px 0 0;">Passengers Received: ${passengers}</p>
               <p style="margin: 2px 0 0;">Calculated Total: ${totalCost}</p>
               <p style="margin: 2px 0 0;">Raw Data: ${JSON.stringify({
                 outbound: tripData.outboundFlight?.pricePerPerson,
@@ -236,6 +236,7 @@ function generateHtmlEmail(tripData: TripData): string {
               })}</p>
             </td>
           </tr>
+
           <!-- Footer -->
           <tr>
             <td style="padding: 24px; text-align: center; color: #999; font-size: 12px;">
@@ -253,51 +254,23 @@ function generateHtmlEmail(tripData: TripData): string {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Received email request");
     const requestData: TripEmailRequest = await req.json();
-    console.log("Request data:", JSON.stringify(requestData));
+    console.log("NUCLEAR LOG: Received request for", requestData.email, "with passengers:", requestData.data.passengers);
     
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!requestData.email || !emailRegex.test(requestData.email)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid email address" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Validate email length (prevent injection)
-    if (requestData.email.length > 254) {
-      return new Response(
-        JSON.stringify({ error: "Email address too long" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-    
-    if (!requestData.data) {
-      return new Response(
-        JSON.stringify({ error: "Missing trip data" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     const subject = "Your TripWeave Itinerary";
     const html = generateHtmlEmail(requestData.data);
 
-    console.log("Sending email via Resend...");
     const emailResponse = await sendEmailViaResend({
       from: "Best Travel Plan <contacts@best-travel-plan.cloud>",
       to: [requestData.email],
       subject,
       html,
     });
-    console.log("Email sent successfully:", emailResponse.id);
 
     return new Response(JSON.stringify({ success: true, id: emailResponse.id }), {
       status: 200,
@@ -305,7 +278,6 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Email sending failed:", errorMessage);
     return new Response(
       JSON.stringify({ error: `Failed to send email: ${errorMessage}` }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
