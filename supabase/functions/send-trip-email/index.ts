@@ -69,7 +69,8 @@ interface TripData {
     included: boolean;
   };
   itinerary?: DayItinerary[];
-  passengers?: number;
+  passengers: number; // Required - no default
+  totalCost: number;  // Pre-calculated from frontend
 }
 
 interface TripEmailRequest {
@@ -85,37 +86,10 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function calculateTotalCost(data: TripData): number {
-  let total = 0;
-  const passengers = data.passengers || 1;
-  
-  if (data.outboundFlight?.included) {
-    total += data.outboundFlight.pricePerPerson * passengers;
-  }
-  if (data.returnFlight?.included) {
-    total += data.returnFlight.pricePerPerson * passengers;
-  }
-  if (data.carRental?.included) {
-    total += data.carRental.totalPrice;
-  }
-  if (data.hotel?.included) {
-    total += data.hotel.totalPrice;
-  }
-  
-  data.itinerary?.forEach((day: DayItinerary) => {
-    day.items.forEach((item: ItineraryItem) => {
-      if (item.included && item.cost) {
-        total += item.cost * passengers;
-      }
-    });
-  });
-  
-  return total;
-}
-
 function generateHtmlEmail(tripData: TripData): string {
-  const totalCost = calculateTotalCost(tripData);
-  const passengers = tripData.passengers || 1;
+  // Use pre-calculated total from frontend to ensure exact match
+  const totalCost = tripData.totalCost;
+  const passengers = tripData.passengers;
 
   return `
 <!DOCTYPE html>
@@ -217,23 +191,8 @@ function generateHtmlEmail(tripData: TripData): string {
           <!-- Total -->
           <tr>
             <td style="background: linear-gradient(135deg, #1a2744 0%, #2d3c5a 100%); padding: 32px; text-align: center;">
-              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 14px;">ESTIMATED TOTAL FOR ${passengers} PASSENGERS</p>
+              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 14px;">ESTIMATED TOTAL FOR ${passengers} PASSENGER${passengers !== 1 ? 'S' : ''}</p>
               <p style="margin: 8px 0 0; color: #c9a962; font-size: 36px; font-weight: 600;">${formatCurrency(totalCost)}</p>
-            </td>
-          </tr>
-
-          <!-- Debug Info -->
-          <tr>
-            <td style="padding: 24px; background-color: #f0f0f0; border-top: 1px solid #ddd; color: #666; font-size: 10px;">
-              <p style="margin: 0; font-weight: bold;">NUCLEAR DEBUG INFO:</p>
-              <p style="margin: 4px 0 0;">Passengers Received: ${passengers}</p>
-              <p style="margin: 2px 0 0;">Calculated Total: ${totalCost}</p>
-              <p style="margin: 2px 0 0;">Raw Data: ${JSON.stringify({
-                outbound: tripData.outboundFlight?.pricePerPerson,
-                return: tripData.returnFlight?.pricePerPerson,
-                car: tripData.carRental?.totalPrice,
-                hotel: tripData.hotel?.totalPrice
-              })}</p>
             </td>
           </tr>
 
@@ -260,7 +219,14 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestData: TripEmailRequest = await req.json();
-    console.log("NUCLEAR LOG: Received request for", requestData.email, "with passengers:", requestData.data.passengers);
+    
+    // Validate passenger count
+    if (!requestData.data.passengers || requestData.data.passengers <= 0) {
+      return new Response(
+        JSON.stringify({ error: "Invalid passenger count" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
     
     const subject = "Your TripWeave Itinerary";
     const html = generateHtmlEmail(requestData.data);
