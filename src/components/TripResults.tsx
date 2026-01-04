@@ -133,7 +133,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
           email: loggedInEmail,
           data: {
             ...tripPlan,
-            passengers: tripDetails.passengers.adults + tripDetails.passengers.children
+            passengers: (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1
           },
         },
       });
