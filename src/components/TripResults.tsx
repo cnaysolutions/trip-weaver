@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Plane,
@@ -65,9 +65,11 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Force the passenger count to be calculated every time the component renders
+  const totalPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1;
+
   const totalCost = useMemo(() => {
     let cost = 0;
-    const totalPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0);
     
     // Flights are already priced per person
     if (tripPlan.outboundFlight?.included) {
@@ -94,7 +96,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
     });
 
     return cost;
-  }, [tripPlan, tripDetails]);
+  }, [tripPlan, tripDetails, totalPassengers]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -116,21 +118,12 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
       return;
     }
 
-    if (!tripPlan) {
-      toast({
-        title: "No itinerary",
-        description: "Please complete a trip search first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSendingEmail(true);
     
-    // Calculate total passengers right here to be absolutely sure
-    const currentPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1;
+    // NUCLEAR FIX: Calculate it right here, right now, from the props
+    const finalPassengerCount = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1;
     
-    console.log("Sending email with passengers:", currentPassengers);
+    console.log("NUCLEAR SEND: Passengers =", finalPassengerCount);
 
     try {
       const { data, error } = await supabase.functions.invoke("send-trip-email", {
@@ -138,18 +131,16 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
           email: loggedInEmail,
           data: {
             ...tripPlan,
-            passengers: currentPassengers
+            passengers: finalPassengerCount
           },
         },
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Email sent!",
-        description: "Check your inbox for your trip itinerary.",
+        description: `Itinerary sent for ${finalPassengerCount} passengers.`,
       });
     } catch (error) {
       console.error("Failed to send email:", error);
@@ -165,20 +156,13 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
 
   const getItemIcon = (type: string) => {
     switch (type) {
-      case "flight":
-        return Plane;
-      case "transport":
-        return Car;
-      case "hotel":
-        return Building2;
-      case "meal":
-        return Utensils;
-      case "attraction":
-        return Camera;
-      case "rest":
-        return Coffee;
-      default:
-        return MapPin;
+      case "flight": return Plane;
+      case "transport": return Car;
+      case "hotel": return Building2;
+      case "meal": return Utensils;
+      case "attraction": return Camera;
+      case "rest": return Coffee;
+      default: return MapPin;
     }
   };
 
@@ -191,21 +175,10 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
             Your Itinerary
           </h2>
           <p className="text-muted-foreground mt-1">
-            {tripDetails.departureCity} → {tripDetails.destinationCity}
+            {tripDetails.departureCity} → {tripDetails.destinationCity} ({totalPassengers} passengers)
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
-            <Button
-              variant={emailFormat === "html" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setEmailFormat("html")}
-              className="text-xs h-8"
-            >
-              <FileText className="h-3.5 w-3.5 mr-1.5" />
-              Formatted HTML
-            </Button>
-          </div>
           <Button 
             onClick={sendEmail} 
             disabled={isSendingEmail}
@@ -256,7 +229,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
             <FlightCard
               flight={tripPlan.outboundFlight}
               label="Outbound"
-              passengers={(tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0)}
+              passengers={totalPassengers}
               onToggle={() => onToggleItem("outboundFlight", tripPlan.outboundFlight!.id)}
               formatCurrency={formatCurrency}
             />
@@ -265,7 +238,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
             <FlightCard
               flight={tripPlan.returnFlight}
               label="Return"
-              passengers={(tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0)}
+              passengers={totalPassengers}
               onToggle={() => onToggleItem("returnFlight", tripPlan.returnFlight!.id)}
               formatCurrency={formatCurrency}
             />
