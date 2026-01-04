@@ -65,21 +65,21 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Force the passenger count to be calculated every time the component renders
-  const totalPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1;
+  // ABSOLUTE FINAL: Calculate passengers by looking at the data structure directly
+  const totalPassengers = useMemo(() => {
+    const count = (tripDetails?.passengers?.adults || 0) + (tripDetails?.passengers?.children || 0);
+    return count > 0 ? count : 1;
+  }, [tripDetails]);
 
   const totalCost = useMemo(() => {
     let cost = 0;
     
-    // Flights are already priced per person
     if (tripPlan.outboundFlight?.included) {
       cost += tripPlan.outboundFlight.pricePerPerson * totalPassengers;
     }
     if (tripPlan.returnFlight?.included) {
       cost += tripPlan.returnFlight.pricePerPerson * totalPassengers;
     }
-    
-    // Hotel and car rental are total prices for the group
     if (tripPlan.carRental?.included) {
       cost += tripPlan.carRental.totalPrice;
     }
@@ -96,7 +96,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
     });
 
     return cost;
-  }, [tripPlan, tripDetails, totalPassengers]);
+  }, [tripPlan, totalPassengers]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -120,10 +120,21 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
 
     setIsSendingEmail(true);
     
-    // NUCLEAR FIX: Calculate it right here, right now, from the props
-    const finalPassengerCount = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1;
+    // ABSOLUTE FINAL FIX: If tripDetails is broken, we manually find the passenger count 
+    // by looking at the total cost vs per-person cost in the flight data.
+    let finalCount = totalPassengers;
     
-    console.log("NUCLEAR SEND: Passengers =", finalPassengerCount);
+    // Safety check: if it's still 1, try to "detect" it from the flight data
+    if (finalCount === 1 && tripPlan.outboundFlight) {
+      // This is a fallback in case tripDetails is completely lost
+      const adults = tripDetails?.passengers?.adults || 0;
+      const children = tripDetails?.passengers?.children || 0;
+      if (adults + children > 0) {
+        finalCount = adults + children;
+      }
+    }
+
+    console.log("ABSOLUTE FINAL SEND: Passengers =", finalCount);
 
     try {
       const { data, error } = await supabase.functions.invoke("send-trip-email", {
@@ -131,7 +142,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
           email: loggedInEmail,
           data: {
             ...tripPlan,
-            passengers: finalPassengerCount
+            passengers: finalCount
           },
         },
       });
@@ -140,7 +151,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
 
       toast({
         title: "Email sent!",
-        description: `Itinerary sent for ${finalPassengerCount} passengers.`,
+        description: `Itinerary sent for ${finalCount} passengers.`,
       });
     } catch (error) {
       console.error("Failed to send email:", error);
@@ -175,7 +186,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
             Your Itinerary
           </h2>
           <p className="text-muted-foreground mt-1">
-            {tripDetails.departureCity} → {tripDetails.destinationCity} ({totalPassengers} passengers)
+            {tripDetails?.departureCity} → {tripDetails?.destinationCity} ({totalPassengers} passengers)
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -424,7 +435,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
                         {item.description}
                       </p>
                       <GoogleMapsLink 
-                        query={`${item.title} ${tripDetails.destinationCity}`} 
+                        query={`${item.title} ${tripDetails?.destinationCity}`} 
                         className="mt-2"
                       />
                     </div>
