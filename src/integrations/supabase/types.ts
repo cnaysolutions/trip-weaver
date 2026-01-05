@@ -14,10 +14,49 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          stripe_checkout_session_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          stripe_checkout_session_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          stripe_checkout_session_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          credits: number
           email: string | null
           full_name: string | null
           id: string
@@ -26,6 +65,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          credits?: number
           email?: string | null
           full_name?: string | null
           id: string
@@ -34,6 +74,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          credits?: number
           email?: string | null
           full_name?: string | null
           id?: string
@@ -209,7 +250,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credit: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
