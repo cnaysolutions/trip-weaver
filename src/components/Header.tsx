@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CreditDisplay } from "@/components/CreditDisplay";
 import { toast } from "sonner";
 
 interface HeaderProps {
@@ -96,6 +97,7 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
 
             {!loading && user && (
               <>
+                <CreditDisplay />
                 <Link
                   to="/trips"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
