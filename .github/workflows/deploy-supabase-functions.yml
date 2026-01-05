@@ -22,5 +22,7 @@ jobs:
         run: |
           supabase functions deploy amadeus-city-search --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           supabase functions deploy send-trip-email --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy stripe-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy create-checkout --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

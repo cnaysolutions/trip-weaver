@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { CalendarIcon, Minus, Plus, Plane, Users, CalendarDays, AlertCircle } from "lucide-react";
+import { CalendarIcon, Minus, Plus, Plane, Users, CalendarDays, AlertCircle, Loader2, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useCredits } from "@/hooks/useCredits";
+import { useToast } from "@/hooks/use-toast";
 import type { TripDetails, FlightClass } from "@/types/trip";
 import type { Location } from "@/types/location";
 
@@ -18,6 +22,11 @@ interface TripIntakeFormProps {
 }
 
 export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { credits, isDeducting, isRedirecting, deductCredit, redirectToCheckout } = useCredits();
+  const { toast } = useToast();
+  
   const [departureCity, setDepartureCity] = useState("");
   const [destinationCity, setDestinationCity] = useState("");
   const [departureLocation, setDepartureLocation] = useState<Location | null>(null);
@@ -67,6 +76,28 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
     setDepartureError(null);
     setDestinationError(null);
 
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to plan your trip.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    // Check credits
+    if (credits !== null && credits <= 0) {
+      toast({
+        title: "No Credits Available",
+        description: "Purchase a Traveler Pack to continue planning trips.",
+        variant: "destructive",
+      });
+      await redirectToCheckout();
+      return;
+    }
+
     let finalDeparture = departureLocation;
     let finalDestination = destinationLocation;
 
@@ -94,6 +125,18 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
     }
 
     setIsNormalizing(false);
+
+    // Deduct credit before proceeding
+    const creditDeducted = await deductCredit();
+    if (!creditDeducted) {
+      toast({
+        title: "No Credits Available",
+        description: "Purchase a Traveler Pack to continue planning trips.",
+        variant: "destructive",
+      });
+      await redirectToCheckout();
+      return;
+    }
 
     onSubmit({
       departureCity,
@@ -466,18 +509,30 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
           variant="hero"
           size="xl"
           className="w-full"
-          disabled={isLoading || isNormalizing || !isFormValid}
+          disabled={isLoading || isNormalizing || isDeducting || isRedirecting || !isFormValid}
         >
-        {isLoading || isNormalizing ? (
-            <span className="animate-pulse">
-              {isNormalizing ? "Verifying locations..." : "Preparing your itinerary..."}
+          {isLoading || isNormalizing || isDeducting ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              {isDeducting ? "Processing..." : isNormalizing ? "Verifying locations..." : "Preparing your itinerary..."}
+            </span>
+          ) : isRedirecting ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Redirecting to payment...
             </span>
           ) : (
-            "👉 Calculate My Holiday Cost"
+            <span className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              Calculate My Holiday Cost
+              {user && credits !== null && (
+                <span className="text-sm opacity-75">({credits} credit{credits !== 1 ? 's' : ''} left)</span>
+              )}
+            </span>
           )}
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
-          We use live prices to estimate your full holiday cost — nothing is booked
+          Uses 1 credit per search — We show live prices, nothing is booked
         </p>
       </div>
     </form>
