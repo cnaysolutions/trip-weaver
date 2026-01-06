@@ -522,7 +522,7 @@ Features:
 - [x] Post-click IATA normalization if user typed but didn't select
 - [x] Gentle inline error if normalization fails
 - [ ] Add form validation with zod (optional enhancement)
-- [ ] Auto-save to database on changes (debounced)
+- [x] Auto-save to database on changes (trip persistence implemented via useTripPersistence hook)
 
 **Microcopy examples from design-guidelines.md:**
 - "Where would you like to start your journey?" ✅
