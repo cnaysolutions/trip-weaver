@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { TripIntakeForm } from "@/components/TripIntakeForm";
 import { TripResults } from "@/components/TripResults";
 import { Footer } from "@/components/Footer";
+import { ContactSection } from "@/components/ContactSection";
 import { generateMockTripPlan } from "@/data/mockTripData";
 import { useTheme } from "@/hooks/useTheme";
 import type { TripDetails, TripPlan } from "@/types/trip";
@@ -108,6 +109,7 @@ const Index = () => {
             </div>
             <TripIntakeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
           </main>
+          <ContactSection />
         </>
       ) : (
         <main className="container mx-auto px-4 py-12 max-w-4xl">
