@@ -61,9 +61,9 @@ export default function TripIntake() {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const plan = generateMockTripPlan(details);
-    setTripPlan(plan);
     
     // Save trip to database if user is logged in
+    // This happens AFTER credit has been deducted in TripIntakeForm
     if (user) {
       const { tripId, error } = await saveTrip(user.id, details, plan);
       if (error) {
@@ -75,6 +75,8 @@ export default function TripIntake() {
       }
     }
     
+    // Set trip plan after save attempt (show results regardless)
+    setTripPlan(plan);
     setIsLoading(false);
     
     // Switch to results mode

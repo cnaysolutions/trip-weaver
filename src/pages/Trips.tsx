@@ -38,14 +38,21 @@ export default function Trips() {
 
   const fetchTrips = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('trips')
         .select('*')
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trips:', error);
+        throw error;
+      }
+      
+      console.log('Fetched trips:', data?.length || 0);
       setTrips(data || []);
     } catch (error: any) {
+      console.error('Failed to load trips:', error);
       toast.error('Unable to load your trips');
     } finally {
       setLoading(false);

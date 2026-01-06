@@ -9,6 +9,10 @@ interface SaveTripResult {
 }
 
 export function useTripPersistence() {
+  /**
+   * Save trip to database. Credit deduction happens BEFORE this is called
+   * in the form submission flow. This function purely handles persistence.
+   */
   const saveTrip = async (
     userId: string,
     tripDetails: TripDetails,
@@ -49,7 +53,10 @@ export function useTripPersistence() {
         .select("id")
         .single();
 
-      if (tripError) throw tripError;
+      if (tripError) {
+        console.error("Trip insert error:", tripError);
+        throw tripError;
+      }
       if (!tripData) throw new Error("Failed to create trip");
 
       const tripId = tripData.id;
@@ -116,7 +123,10 @@ export function useTripPersistence() {
           .from("trip_items")
           .insert(tripItems);
 
-        if (itemsError) throw itemsError;
+        if (itemsError) {
+          console.error("Trip items insert error:", itemsError);
+          throw itemsError;
+        }
       }
 
       console.log(`Trip ${tripId} saved with ${tripItems.length} items`);
