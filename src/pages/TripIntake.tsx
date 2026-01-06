@@ -6,6 +6,7 @@ import { TripResults } from "@/components/TripResults";
 import { generateMockTripPlan } from "@/data/mockTripData";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
+import { useCredits } from "@/hooks/useCredits";
 import { useTripPersistence } from "@/hooks/useTripPersistence";
 import { toast } from "sonner";
 import type { TripDetails, TripPlan } from "@/types/trip";
@@ -42,6 +43,7 @@ export default function TripIntake() {
   const [isLoading, setIsLoading] = useState(false);
   const { theme, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
   const { user } = useAuth();
+  const { credits, deductCredit, redirectToCheckout, fetchCredits } = useCredits();
   const { saveTrip } = useTripPersistence();
 
   useEffect(() => {
@@ -57,28 +59,49 @@ export default function TripIntake() {
     setIsLoading(true);
     setTripDetails(details);
 
-    // Simulate API call delay for realistic experience
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const plan = generateMockTripPlan(details);
-    
-    // Save trip to database if user is logged in
-    // This happens AFTER credit has been deducted in TripIntakeForm
-    if (user) {
-      const { tripId, error } = await saveTrip(user.id, details, plan);
-      if (error) {
-        console.error("Failed to save trip:", error);
-        toast.error("Trip generated but failed to save. You can still view it now.");
-      } else {
-        toast.success("Trip saved! View it anytime from My Trips.");
-        console.log("Trip saved with ID:", tripId);
-      }
+    // Check if user has credits before proceeding
+    if (!user) {
+      toast.error("Please log in to plan your trip.");
+      setIsLoading(false);
+      return;
     }
+
+    if (credits !== null && credits <= 0) {
+      toast.error("No credits available. Purchase a Traveler Pack to continue.");
+      await redirectToCheckout();
+      setIsLoading(false);
+      return;
+    }
+
+    // Generate the trip plan
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const plan = generateMockTripPlan(details);
+
+    // Save trip to database FIRST
+    const { tripId, error: saveError } = await saveTrip(user.id, details, plan);
     
-    // Set trip plan after save attempt (show results regardless)
+    if (saveError) {
+      console.error("Failed to save trip:", saveError);
+      toast.error("Failed to save trip. Please try again.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Only deduct credit AFTER successful save
+    const creditDeducted = await deductCredit();
+    if (!creditDeducted) {
+      // Trip was saved but credit deduction failed - this is rare but we should handle it
+      console.warn("Trip saved but credit deduction failed for trip:", tripId);
+      // We still show the trip since it was saved successfully
+    }
+
+    toast.success("Trip saved! View it anytime from My Trips.");
+    console.log("Trip saved with ID:", tripId);
+
+    // Set trip plan and show results
     setTripPlan(plan);
     setIsLoading(false);
-    
+
     // Switch to results mode
     setResultsMode();
 
