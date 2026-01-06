@@ -422,16 +422,16 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
               )}
             >
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex gap-4">
-                    <div className="mt-1 p-2 bg-muted rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex gap-3 sm:gap-4">
+                    <div className="shrink-0 mt-1 p-2 bg-muted rounded-lg">
                       {(() => {
                         const Icon = getItemIcon(item.type);
                         return <Icon className="h-5 w-5 text-muted-foreground" />;
                       })()}
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-accent">{item.time}</span>
                         <h4 className="font-medium">{item.title}</h4>
                       </div>
@@ -444,14 +444,17 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
                       />
                     </div>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-2">
-                    {item.cost && (
+                  {/* Mobile: horizontal divider + row layout; Desktop: column layout */}
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/50">
+                    {item.cost ? (
                       <p className="font-medium">{formatCurrency(item.cost)}</p>
+                    ) : (
+                      <span className="sm:hidden" />
                     )}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-full hover:bg-muted"
+                      className="shrink-0 h-8 w-8 rounded-full hover:bg-muted"
                       onClick={() => onToggleItem("itinerary", `${activeDay}-${idx}`)}
                     >
                       {item.included ? (
