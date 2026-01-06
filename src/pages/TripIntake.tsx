@@ -5,6 +5,9 @@ import { TripIntakeForm } from "@/components/TripIntakeForm";
 import { TripResults } from "@/components/TripResults";
 import { generateMockTripPlan } from "@/data/mockTripData";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
+import { useTripPersistence } from "@/hooks/useTripPersistence";
+import { toast } from "sonner";
 import type { TripDetails, TripPlan } from "@/types/trip";
 
 function setMetaTag(name: string, content: string) {
@@ -38,6 +41,8 @@ export default function TripIntake() {
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { theme, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
+  const { user } = useAuth();
+  const { saveTrip } = useTripPersistence();
 
   useEffect(() => {
     document.title = "Plan a Trip | Best Holiday Plan";
@@ -57,6 +62,19 @@ export default function TripIntake() {
 
     const plan = generateMockTripPlan(details);
     setTripPlan(plan);
+    
+    // Save trip to database if user is logged in
+    if (user) {
+      const { tripId, error } = await saveTrip(user.id, details, plan);
+      if (error) {
+        console.error("Failed to save trip:", error);
+        toast.error("Trip generated but failed to save. You can still view it now.");
+      } else {
+        toast.success("Trip saved! View it anytime from My Trips.");
+        console.log("Trip saved with ID:", tripId);
+      }
+    }
+    
     setIsLoading(false);
     
     // Switch to results mode
