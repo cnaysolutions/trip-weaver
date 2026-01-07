@@ -19,6 +19,7 @@ export interface TripDetails {
   flightClass: FlightClass;
   includeCarRental: boolean;
   includeHotel: boolean;
+  is_paid?: boolean; // Added to indicate if the trip is paid and should show full details
 }
 
 export interface Flight {
@@ -73,6 +74,8 @@ export interface ItineraryItem {
   duration?: string;
   cost?: number;
   included: boolean;
+  imageUrl?: string;
+  bookingUrl?: string;
 }
 
 export interface DayItinerary {
