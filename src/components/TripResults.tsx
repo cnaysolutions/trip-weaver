@@ -34,22 +34,16 @@ const getGoogleMapsLink = (locationQuery: string): string => {
 };
 
 // Google Maps link component
-function GoogleMapsLink({ query, className }: { query: string; className?: string }) {
-  return (
-    <a
-      href={getGoogleMapsLink(query)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        "inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent transition-colors",
-        className
-      )}
-    >
-      <ExternalLink className="h-3 w-3" />
-      View on Google Maps
-    </a>
-  );
-}
+const GoogleMapsLink = ({ query }: { query: string } ) => (
+  <a
+    href={getGoogleMapsLink(query)}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-blue-600 hover:underline flex items-center text-sm"
+  >
+    <MapPin className="h-3 w-3 mr-1" /> View on Map
+  </a>
+);
 
 interface TripResultsProps {
   tripDetails: TripDetails;
@@ -58,88 +52,74 @@ interface TripResultsProps {
   onReset: () => void;
 }
 
-export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: TripResultsProps) {
-  const [activeDay, setActiveDay] = useState(0);
-  const [emailFormat, setEmailFormat] = useState<"text" | "html">("html");
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+export function TripResults({
+  tripDetails,
+  tripPlan,
+  onToggleItem,
+  onReset,
+}: TripResultsProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const totalCost = useMemo(() => {
     let cost = 0;
-    const totalPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0);
-    
-    // Flights are already priced per person
     if (tripPlan.outboundFlight?.included) {
-      cost += tripPlan.outboundFlight.pricePerPerson * totalPassengers;
+      cost += tripPlan.outboundFlight.pricePerPerson * (tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants);
     }
     if (tripPlan.returnFlight?.included) {
-      cost += tripPlan.returnFlight.pricePerPerson * totalPassengers;
+      cost += tripPlan.returnFlight.pricePerPerson * (tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants);
     }
-    
-    // Hotel and car rental are total prices for the group
     if (tripPlan.carRental?.included) {
       cost += tripPlan.carRental.totalPrice;
     }
     if (tripPlan.hotel?.included) {
       cost += tripPlan.hotel.totalPrice;
     }
-
     tripPlan.itinerary.forEach((day) => {
       day.items.forEach((item) => {
         if (item.included && item.cost) {
-          cost += item.cost * totalPassengers;
+          cost += item.cost * (tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants);
         }
       });
     });
-
     return cost;
   }, [tripPlan, tripDetails]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "EUR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const sendEmail = async () => {
-    const loggedInEmail = user?.email || user?.user_metadata?.email;
-
-    if (!loggedInEmail) {
+    if (!user) {
       toast({
-        title: "Email not available",
-        description: "Please sign in to send the itinerary to your email.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!tripPlan) {
-      toast({
-        title: "No itinerary",
-        description: "Please complete a trip search first.",
+        title: "Not logged in",
+        description: "Please log in to send the trip to your email.",
         variant: "destructive",
       });
       return;
     }
 
     setIsSendingEmail(true);
-    
-    // Calculate total passengers right here to be absolutely sure
-    const currentPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1;
-    
-    console.log("Sending email with passengers:", currentPassengers);
-
     try {
+      const loggedInEmail = user.email;
+      if (!loggedInEmail) {
+        throw new Error("User email not found.");
+      }
+
       const { data, error } = await supabase.functions.invoke("send-trip-email", {
         body: {
           email: loggedInEmail,
-          data: {
-            ...tripPlan,
-            passengers: currentPassengers
+          trip: {
+            origin_city: tripDetails.departureCity,
+            destination_city: tripDetails.destinationCity,
+            departure_date: tripDetails.departureDate?.toISOString() || new Date().toISOString(),
+            return_date: tripDetails.returnDate?.toISOString() || new Date().toISOString(),
+            adults: tripDetails.passengers.adults,
+            children: tripDetails.passengers.children,
+            infants: tripDetails.passengers.infants,
+            flight_class: tripDetails.flightClass,
+            include_car: tripDetails.includeCarRental,
+            include_hotel: tripDetails.includeHotel,
+            is_paid: tripDetails.is_paid || false, // Pass is_paid status
           },
+          tripPlan: tripPlan,
         },
       });
 
@@ -149,13 +129,13 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
 
       toast({
         title: "Email sent!",
-        description: "Check your inbox for your trip itinerary.",
+        description: "Your trip itinerary has been sent to your email address.",
       });
     } catch (error) {
       console.error("Failed to send email:", error);
       toast({
         title: "Failed to send email",
-        description: "Please try again later.",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -163,415 +143,260 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
     }
   };
 
-  const getItemIcon = (type: string) => {
-    switch (type) {
-      case "flight":
-        return Plane;
-      case "transport":
-        return Car;
-      case "hotel":
-        return Building2;
-      case "meal":
-        return Utensils;
-      case "attraction":
-        return Camera;
-      case "rest":
-        return Coffee;
-      default:
-        return MapPin;
-    }
-  };
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display text-3xl font-semibold text-foreground">
-            Your Itinerary
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            {tripDetails.departureCity} → {tripDetails.destinationCity}
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
-            <Button
-              variant={emailFormat === "html" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setEmailFormat("html")}
-              className="text-xs h-8"
-            >
-              <FileText className="h-3.5 w-3.5 mr-1.5" />
-              Formatted HTML
-            </Button>
-          </div>
-          <Button 
-            onClick={sendEmail} 
-            disabled={isSendingEmail}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground"
-          >
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-2xl font-bold">
+          Your Itinerary: {tripDetails.departureCity} → {tripDetails.destinationCity}
+        </CardTitle>
+        <div className="flex items-center space-x-2">
+          <Button onClick={sendEmail} disabled={isSendingEmail}>
             {isSendingEmail ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Sending...
-              </>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <>
-                <Mail className="h-4 w-4 mr-2" />
-                Send to my email
-              </>
+              <Mail className="mr-2 h-4 w-4" />
             )}
+            Send to my email
           </Button>
           <Button variant="outline" onClick={onReset}>
             Start Over
           </Button>
         </div>
-      </div>
-
-      {/* Summary Card */}
-      <Card className="bg-primary text-primary-foreground overflow-hidden border-none shadow-xl">
-        <CardContent className="p-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="space-y-2 text-center md:text-left">
-              <p className="text-primary-foreground/70 text-sm font-medium uppercase tracking-wider">Estimated Total</p>
-              <p className="text-5xl font-display font-bold">{formatCurrency(totalCost)}</p>
-            </div>
-            <div className="text-center md:text-right space-y-1">
-              <p className="text-primary-foreground/80 font-medium">Costs adjust instantly as you refine.</p>
-              <p className="text-primary-foreground/60 text-sm">You're always in control.</p>
-            </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4">
+          <div className="flex items-baseline justify-between">
+            <p className="text-sm font-medium text-gray-500">Estimated Total</p>
+            <p className="text-4xl font-bold text-primary">
+              €{totalCost.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </p>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Flights Section */}
-      <div className="space-y-4">
-        <h3 className="font-display text-xl font-medium flex items-center gap-2">
-          <Plane className="h-5 w-5 text-accent" />
-          Flights
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          {tripPlan.outboundFlight && (
-            <FlightCard
-              flight={tripPlan.outboundFlight}
-              label="Outbound"
-              passengers={(tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0)}
-              onToggle={() => onToggleItem("outboundFlight", tripPlan.outboundFlight!.id)}
-              formatCurrency={formatCurrency}
-            />
-          )}
-          {tripPlan.returnFlight && (
-            <FlightCard
-              flight={tripPlan.returnFlight}
-              label="Return"
-              passengers={(tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0)}
-              onToggle={() => onToggleItem("returnFlight", tripPlan.returnFlight!.id)}
-              formatCurrency={formatCurrency}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Car Rental Section */}
-      {tripPlan.carRental && (
-        <div className="space-y-4">
-          <h3 className="font-display text-xl font-medium flex items-center gap-2">
-            <Car className="h-5 w-5 text-accent" />
-            Airport Car Rental
-          </h3>
-          <Card
-            variant={tripPlan.carRental.included ? "premium" : "default"}
-            className={cn(
-              "transition-all duration-300",
-              !tripPlan.carRental.included && "opacity-60"
-            )}
-          >
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-3 flex-1">
-                  <div>
-                    <p className="font-medium text-lg">{tripPlan.carRental.vehicleName}</p>
-                    <p className="text-sm text-muted-foreground">{tripPlan.carRental.company}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {tripPlan.carRental.pickupLocation}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {tripPlan.carRental.pickupTime} - {tripPlan.carRental.dropoffTime}
-                    </span>
-                  </div>
-                  <GoogleMapsLink 
-                    query={tripPlan.carRental.pickupLocation} 
-                    className="mt-2"
-                  />
-                </div>
-                <div className="text-right ml-4">
-                  <p className="font-display text-2xl font-semibold">
-                    {formatCurrency(tripPlan.carRental.totalPrice)}
-                  </p>
-                  <Button
-                    variant={tripPlan.carRental.included ? "soft" : "outline"}
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => onToggleItem("carRental", tripPlan.carRental!.id)}
-                  >
-                    {tripPlan.carRental.included ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" /> Included
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4 mr-1" /> Excluded
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Hotel Section */}
-      {tripPlan.hotel && (
-        <div className="space-y-4">
-          <h3 className="font-display text-xl font-medium flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-accent" />
-            Accommodation
-          </h3>
-          <Card
-            variant={tripPlan.hotel.included ? "premium" : "default"}
-            className={cn(
-              "transition-all duration-300",
-              !tripPlan.hotel.included && "opacity-60"
-            )}
-          >
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-3 flex-1">
-                  <div>
-                    <p className="font-medium text-lg">{tripPlan.hotel.name}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      {[...Array(tripPlan.hotel.rating)].map((_, i) => (
-                        <span key={i} className="text-accent">★</span>
-                      ))}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">{tripPlan.hotel.address}</p>
-                  </div>
-                  <GoogleMapsLink 
-                    query={tripPlan.hotel.address} 
-                    className="mt-2"
-                  />
-                </div>
-                <div className="text-right ml-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(tripPlan.hotel.pricePerNight)} / night
-                    </p>
-                    <p className="font-display text-2xl font-semibold">
-                      {formatCurrency(tripPlan.hotel.totalPrice)}
-                    </p>
-                  </div>
-                  <Button
-                    variant={tripPlan.hotel.included ? "soft" : "outline"}
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => onToggleItem("hotel", tripPlan.hotel!.id)}
-                  >
-                    {tripPlan.hotel.included ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" /> Included
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4 mr-1" /> Excluded
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Itinerary Section */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="font-display text-xl font-medium flex items-center gap-2">
-            <Clock className="h-5 w-5 text-accent" />
-            Daily Itinerary
-          </h3>
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {tripPlan.itinerary.map((day, idx) => (
-              <Button
-                key={day.day}
-                variant={activeDay === idx ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setActiveDay(idx)}
-                className={cn(
-                  "whitespace-nowrap",
-                  activeDay === idx && "bg-accent/10 text-accent hover:bg-accent/20"
-                )}
-              >
-                Day {day.day}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {tripPlan.itinerary[activeDay].items.map((item, idx) => (
-            <Card
-              key={idx}
-              className={cn(
-                "transition-all duration-300 border-l-4",
-                item.included ? "border-l-accent" : "border-l-muted opacity-60"
-              )}
-            >
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                  <div className="flex gap-4 w-full">
-                    <div className="mt-1 p-2 bg-muted rounded-lg shrink-0">
-                      {(() => {
-                        const Icon = getItemIcon(item.type);
-                        return <Icon className="h-5 w-5 text-muted-foreground" />;
-                      })()}
-                    </div>
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-accent">{item.time}</span>
-                        <h4 className="font-medium">{item.title}</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {item.description}
+          {/* Flights */}
+          {tripPlan.outboundFlight || tripPlan.returnFlight ? (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold flex items-center">
+                <Plane className="mr-2 h-5 w-5 text-primary" /> Flights
+              </h3>
+              {tripPlan.outboundFlight && (
+                <Card className={cn(!tripPlan.outboundFlight.included && "opacity-50")}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {tripPlan.outboundFlight.originCode} → {tripPlan.outboundFlight.destinationCode}
                       </p>
-                      {item.imageUrl && (
-                        <div className="mt-3 rounded-lg overflow-hidden border border-muted aspect-video max-w-md">
-                          <img 
-                            src={item.imageUrl} 
-                            alt={item.title} 
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                          />
-                        </div>
-                      )}
-                      <div className="flex flex-wrap items-center gap-3 mt-3">
-                        <GoogleMapsLink 
-                          query={`${item.title} ${tripDetails.destinationCity}`} 
-                        />
-                        {item.bookingUrl && (
-                          <a
-                            href={item.bookingUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Book Tickets
-                          </a>
-                        )}
-                      </div>
+                      <p className="text-sm text-gray-500">
+                        {tripPlan.outboundFlight.airline} • {tripPlan.outboundFlight.flightNumber}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {tripPlan.outboundFlight.departureTime} - {tripPlan.outboundFlight.arrivalTime} ({(tripPlan.outboundFlight.duration)})
+                      </p>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <p className="font-semibold">
+                        €{(tripPlan.outboundFlight.pricePerPerson * (tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants)).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onToggleItem("outboundFlight", tripPlan.outboundFlight!.id)}
+                      >
+                        {tripPlan.outboundFlight.included ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500" />
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {tripPlan.returnFlight && (
+                <Card className={cn(!tripPlan.returnFlight.included && "opacity-50")}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {tripPlan.returnFlight.originCode} → {tripPlan.returnFlight.destinationCode}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {tripPlan.returnFlight.airline} • {tripPlan.returnFlight.flightNumber}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {tripPlan.returnFlight.departureTime} - {tripPlan.returnFlight.arrivalTime} ({(tripPlan.returnFlight.duration)})
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <p className="font-semibold">
+                        €{(tripPlan.returnFlight.pricePerPerson * (tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants)).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onToggleItem("returnFlight", tripPlan.returnFlight!.id)}
+                      >
+                        {tripPlan.returnFlight.included ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500" />
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : null}
+
+          {/* Hotel */}
+          {tripPlan.hotel ? (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold flex items-center">
+                <Building2 className="mr-2 h-5 w-5 text-primary" /> Accommodation
+              </h3>
+              <Card className={cn(!tripPlan.hotel.included && "opacity-50")}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{tripPlan.hotel.name}</p>
+                    <p className="text-sm text-gray-500">
+                      ⭐ {tripPlan.hotel.rating}/5 • {tripPlan.hotel.distanceFromAirport} from airport
+                    </p>
+                    <p className="text-sm text-gray-500">{tripPlan.hotel.address}</p>
+                    <GoogleMapsLink query={`${tripPlan.hotel.name} ${tripDetails.destinationCity}`} />
                   </div>
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-muted/50">
-                    {item.cost && (
-                      <p className="font-medium">{formatCurrency(item.cost)}</p>
-                    )}
+                  <div className="flex items-center space-x-2">
+                    <p className="font-semibold">
+                      €{tripPlan.hotel.totalPrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </p>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-full hover:bg-muted"
-                      onClick={() => onToggleItem("itinerary", `${activeDay}-${idx}`)}
+                      onClick={() => onToggleItem("hotel", tripPlan.hotel!.id)}
                     >
-                      {item.included ? (
-                        <Check className="h-4 w-4 text-accent" />
+                      {tripPlan.hotel.included ? (
+                        <Check className="h-4 w-4 text-green-500" />
                       ) : (
-                        <X className="h-4 w-4 text-muted-foreground" />
+                        <X className="h-4 w-4 text-red-500" />
                       )}
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
 
-function FlightCard({ 
-  flight, 
-  label, 
-  passengers, 
-  onToggle, 
-  formatCurrency 
-}: { 
-  flight: any; 
-  label: string; 
-  passengers: number;
-  onToggle: () => void;
-  formatCurrency: (amount: number) => string;
-}) {
-  return (
-    <Card
-      variant={flight.included ? "premium" : "default"}
-      className={cn(
-        "transition-all duration-300",
-        !flight.included && "opacity-60"
-      )}
-    >
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-3 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-accent/10 text-accent rounded-full">
-                {label}
-              </span>
-              <span className="text-sm text-muted-foreground">{flight.airline}</span>
+          {/* Car Rental */}
+          {tripPlan.carRental ? (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold flex items-center">
+                <Car className="mr-2 h-5 w-5 text-primary" /> Car Rental
+              </h3>
+              <Card className={cn(!tripPlan.carRental.included && "opacity-50")}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{tripPlan.carRental.vehicleName}</p>
+                    <p className="text-sm text-gray-500">{tripPlan.carRental.company}</p>
+                    <p className="text-sm text-gray-500">
+                      Pickup: {format(new Date(tripPlan.carRental.pickupTime), "MMM d, p")}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Dropoff: {format(new Date(tripPlan.carRental.dropoffTime), "MMM d, p")}
+                    </p>
+                    <GoogleMapsLink query={`${tripPlan.carRental.pickupLocation} ${tripDetails.destinationCity}`} />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <p className="font-semibold">
+                      €{tripPlan.carRental.totalPrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onToggleItem("carRental", tripPlan.carRental!.id)}
+                    >
+                      {tripPlan.carRental.included ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 text-red-500" />
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-display font-bold">{flight.originCode}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">{flight.departureTime}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground mt-1" />
-              <div className="text-center">
-                <p className="text-2xl font-display font-bold">{flight.destinationCode}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">{flight.arrivalTime}</p>
-              </div>
+          ) : null}
+
+          {/* Daily Itinerary */}
+          {tripPlan.itinerary && tripPlan.itinerary.length > 0 ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center">
+                <FileText className="mr-2 h-5 w-5 text-primary" /> Daily Itinerary
+              </h3>
+              {tripPlan.itinerary.map((day) => (
+                <Card key={day.day}>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Day {day.day}: {format(new Date(day.date), "EEEE, MMM d")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {day.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className={cn(
+                          "flex items-start justify-between",
+                          !item.included && "opacity-50"
+                        )}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <Clock className="h-4 w-4 text-gray-500 mt-1" />
+                          <div>
+                            <p className="font-medium">{item.title}</p>
+                            <p className="text-sm text-gray-500">{item.time}</p>
+                            {item.description && (
+                              <p className="text-sm text-gray-500">{item.description}</p>
+                            )}
+                            {item.imageUrl && (
+                              <img src={item.imageUrl} alt={item.title} className="w-24 h-auto rounded-md mt-2" />
+                            )}
+                            <div className="flex space-x-3 mt-2">
+                              <GoogleMapsLink query={`${item.title} ${tripDetails.destinationCity}`} />
+                              {item.bookingUrl && (
+                                <a
+                                  href={item.bookingUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline flex items-center text-sm"
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" /> Book Now
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {item.cost && (
+                          <div className="flex items-center space-x-2">
+                            <p className="font-semibold">
+                              €{(item.cost * (tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants)).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onToggleItem("itinerary", item.id)}
+                            >
+                              {item.included ? (
+                                <Check className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <X className="h-4 w-4 text-red-500" />
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </div>
-          <div className="text-right ml-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">
-                {formatCurrency(flight.pricePerPerson)} × {passengers}
-              </p>
-              <p className="font-display text-2xl font-semibold">
-                {formatCurrency(flight.pricePerPerson * passengers)}
-              </p>
-            </div>
-            <Button
-              variant={flight.included ? "soft" : "outline"}
-              size="sm"
-              className="mt-2"
-              onClick={onToggle}
-            >
-              {flight.included ? (
-                <>
-                  <Check className="h-4 w-4 mr-1" /> Included
-                </>
-              ) : (
-                <>
-                  <X className="h-4 w-4 mr-1" /> Excluded
-                </>
-              )}
-            </Button>
-          </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>
