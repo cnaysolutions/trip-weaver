@@ -44,34 +44,38 @@ export default function TripDetailsPage() {
       };
 
       // 3. Reconstruct the TripPlan (The AI results)
-      const items = trip.trip_items || [];
+      // Safely handle case where trip_items may be null, undefined, or empty
+      const items = Array.isArray(trip.trip_items) ? trip.trip_items : [];
+      
       const plan: TripPlan = {
         outboundFlight: items.find((i: any) => i.item_type === 'flight' && (i.provider_data as any)?.direction === 'outbound')?.provider_data as any,
         returnFlight: items.find((i: any) => i.item_type === 'flight' && (i.provider_data as any)?.direction === 'return')?.provider_data as any,
         carRental: items.find((i: any) => i.item_type === 'car')?.provider_data as any,
         hotel: items.find((i: any) => i.item_type === 'hotel')?.provider_data as any,
-        itinerary: [], // We'll fill this below
+        itinerary: [], // Will be filled below if items exist
         totalCost: 0 // Will be recalculated by TripResults
       };
 
-      // Rebuild the daily itinerary
-      const days: any[] = [];
-      items.filter((i: any) => i.item_type === 'activity').forEach((item: any) => {
-        const dayNum = item.day_number || 1;
-        if (!days[dayNum - 1]) days[dayNum - 1] = { day: dayNum, items: [] };
-        days[dayNum - 1].items.push({
-          id: item.id,
-          title: item.name,
-          description: item.description,
-          time: (item.provider_data as any)?.time || "09:00",
-          type: "attraction",
-          cost: item.cost,
-          included: item.included,
-          imageUrl: item.image_url,
-          bookingUrl: item.booking_url
+      // Rebuild the daily itinerary only if we have activity items
+      if (items.length > 0) {
+        const days: any[] = [];
+        items.filter((i: any) => i.item_type === 'activity').forEach((item: any) => {
+          const dayNum = item.day_number || 1;
+          if (!days[dayNum - 1]) days[dayNum - 1] = { day: dayNum, items: [] };
+          days[dayNum - 1].items.push({
+            id: item.id,
+            title: item.name,
+            description: item.description,
+            time: (item.provider_data as any)?.time || "09:00",
+            type: "attraction",
+            cost: item.cost,
+            included: item.included,
+            imageUrl: item.image_url,
+            bookingUrl: item.booking_url
+          });
         });
-      });
-      plan.itinerary = days.filter(d => d !== undefined);
+        plan.itinerary = days.filter(d => d !== undefined);
+      }
 
       setData({ plan, details });
       setLoading(false);
