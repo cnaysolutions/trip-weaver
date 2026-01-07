@@ -90,8 +90,8 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
       cost += tripPlan.hotel.totalPrice;
     }
 
-    tripPlan.itinerary.forEach((day) => {
-      day.items.forEach((item) => {
+    (tripPlan.itinerary || []).forEach((day) => {
+      (day?.items || []).forEach((item) => {
         if (item.included && item.cost) {
           cost += item.cost * totalPassengers;
         }
@@ -388,88 +388,100 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
       )}
 
       {/* Itinerary Section */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="font-display text-xl font-medium flex items-center gap-2">
-            <Clock className="h-5 w-5 text-accent" />
-            Daily Itinerary
-          </h3>
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {tripPlan.itinerary.map((day, idx) => (
-              <Button
-                key={day.day}
-                variant={activeDay === idx ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setActiveDay(idx)}
+      {tripPlan.itinerary && tripPlan.itinerary.length > 0 ? (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-xl font-medium flex items-center gap-2">
+              <Clock className="h-5 w-5 text-accent" />
+              Daily Itinerary
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              {tripPlan.itinerary.map((day, idx) => (
+                <Button
+                  key={day.day}
+                  variant={activeDay === idx ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveDay(idx)}
+                  className={cn(
+                    "whitespace-nowrap",
+                    activeDay === idx && "bg-accent/10 text-accent hover:bg-accent/20"
+                  )}
+                >
+                  Day {day.day}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {(tripPlan.itinerary[activeDay]?.items || []).map((item, idx) => (
+              <Card
+                key={idx}
                 className={cn(
-                  "whitespace-nowrap",
-                  activeDay === idx && "bg-accent/10 text-accent hover:bg-accent/20"
+                  "transition-all duration-300 border-l-4",
+                  item.included ? "border-l-accent" : "border-l-muted opacity-60"
                 )}
               >
-                Day {day.day}
-              </Button>
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex gap-3 sm:gap-4">
+                      <div className="shrink-0 mt-1 p-2 bg-muted rounded-lg">
+                        {(() => {
+                          const Icon = getItemIcon(item.type);
+                          return <Icon className="h-5 w-5 text-muted-foreground" />;
+                        })()}
+                      </div>
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-accent">{item.time}</span>
+                          <h4 className="font-medium">{item.title}</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {item.description}
+                        </p>
+                        <GoogleMapsLink 
+                          query={`${item.title} ${tripDetails?.destinationCity}`} 
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+                    {/* Mobile: horizontal divider + row layout; Desktop: column layout */}
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/50">
+                      {item.cost ? (
+                        <p className="font-medium">{formatCurrency(item.cost)}</p>
+                      ) : (
+                        <span className="sm:hidden" />
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-8 w-8 rounded-full hover:bg-muted"
+                        onClick={() => onToggleItem("itinerary", `${activeDay}-${idx}`)}
+                      >
+                        {item.included ? (
+                          <Check className="h-4 w-4 text-accent" />
+                        ) : (
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
-
-        <div className="space-y-4">
-          {tripPlan.itinerary[activeDay].items.map((item, idx) => (
-            <Card
-              key={idx}
-              className={cn(
-                "transition-all duration-300 border-l-4",
-                item.included ? "border-l-accent" : "border-l-muted opacity-60"
-              )}
-            >
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div className="flex gap-3 sm:gap-4">
-                    <div className="shrink-0 mt-1 p-2 bg-muted rounded-lg">
-                      {(() => {
-                        const Icon = getItemIcon(item.type);
-                        return <Icon className="h-5 w-5 text-muted-foreground" />;
-                      })()}
-                    </div>
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-accent">{item.time}</span>
-                        <h4 className="font-medium">{item.title}</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {item.description}
-                      </p>
-                      <GoogleMapsLink 
-                        query={`${item.title} ${tripDetails?.destinationCity}`} 
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
-                  {/* Mobile: horizontal divider + row layout; Desktop: column layout */}
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/50">
-                    {item.cost ? (
-                      <p className="font-medium">{formatCurrency(item.cost)}</p>
-                    ) : (
-                      <span className="sm:hidden" />
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 h-8 w-8 rounded-full hover:bg-muted"
-                      onClick={() => onToggleItem("itinerary", `${activeDay}-${idx}`)}
-                    >
-                      {item.included ? (
-                        <Check className="h-4 w-4 text-accent" />
-                      ) : (
-                        <X className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      ) : (
+        <Card className="bg-muted/30 border-dashed">
+          <CardContent className="p-8 text-center">
+            <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-display text-lg font-medium mb-2">This trip is a preview</h3>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              Upgrade to see the full daily itinerary with activities, attractions, and cost breakdowns.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
