@@ -6,9 +6,7 @@ import { TripResults } from "@/components/TripResults";
 import { generateMockTripPlan } from "@/data/mockTripData";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
-import { useCredits } from "@/hooks/useCredits";
-import { useTripPersistence } from "@/hooks/useTripPersistence";
-import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import type { TripDetails, TripPlan } from "@/types/trip";
 
 function setMetaTag(name: string, content: string) {
@@ -25,7 +23,7 @@ function setMetaTag(name: string, content: string) {
 }
 
 function setCanonical(url: string) {
-  const existing = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+  const existing = document.querySelector("link[rel=\"canonical\"]") as HTMLLinkElement | null;
   if (existing) {
     existing.setAttribute("href", url);
     return;
@@ -41,10 +39,8 @@ export default function TripIntake() {
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { theme, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
   const { user } = useAuth();
-  const { credits, deductCredit, redirectToCheckout, fetchCredits } = useCredits();
-  const { saveTrip } = useTripPersistence();
+  const { theme, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
 
   useEffect(() => {
     document.title = "Plan a Trip | Best Holiday Plan";
@@ -59,52 +55,67 @@ export default function TripIntake() {
     setIsLoading(true);
     setTripDetails(details);
 
-    // Check if user has credits before proceeding
-    if (!user) {
-      toast.error("Please log in to plan your trip.");
-      setIsLoading(false);
-      return;
-    }
-
-    if (credits !== null && credits <= 0) {
-      toast.error("No credits available. Purchase a Traveler Pack to continue.");
-      await redirectToCheckout();
-      setIsLoading(false);
-      return;
-    }
-
-    // Generate the trip plan
+    // Simulate API call delay for realistic experience
     await new Promise((resolve) => setTimeout(resolve, 1500));
+
     const plan = generateMockTripPlan(details);
-
-    // Save trip to database FIRST - only the main trip record is required
-    const { tripId, error: saveError, itemsWarning } = await saveTrip(user.id, details, plan);
     
-    if (saveError) {
-      console.error("Failed to save trip:", saveError);
-      toast.error("Failed to save trip. Please try again.");
-      setIsLoading(false);
-      return;
+    // Save to Supabase if user is logged in
+    if (user) {
+      try {
+        const { data: tripData, error: tripError } = await supabase
+          .from("trips")
+          .insert({
+            user_id: user.id,
+            origin_city: details.departureCity,
+            destination_city: details.destinationCity,
+            departure_date: details.departureDate?.toISOString() || new Date().toISOString(),
+            return_date: details.returnDate?.toISOString() || new Date().toISOString(),
+            adults: details.passengers.adults,
+            children: details.passengers.children,
+            infants: details.passengers.infants,
+            flight_class: details.flightClass,
+            include_car: details.includeCarRental,
+            include_hotel: details.includeHotel,
+            status: "planning"
+          })
+          .select()
+          .single();
+
+        if (tripError) throw tripError;
+
+        // Save itinerary items
+        if (tripData && plan.itinerary) {
+          const allItems = plan.itinerary.flatMap(day => 
+            day.items.map(item => ({
+              trip_id: tripData.id,
+              day_number: day.day,
+              name: item.title,
+              description: item.description,
+              item_type: item.type,
+              time: item.time,
+              cost: item.cost || 0,
+              included: item.included,
+              image_url: item.imageUrl,
+              booking_url: item.bookingUrl,
+              provider_data: item.provider_data,
+            }))
+          );
+
+          const { error: itemsError } = await supabase
+            .from("trip_items")
+            .insert(allItems);
+
+          if (itemsError) throw itemsError;
+        }
+      } catch (error) {
+        console.error("Error saving trip:", error);
+      }
     }
 
-    // Only deduct credit AFTER successful trip record save
-    const creditDeducted = await deductCredit();
-    if (!creditDeducted) {
-      console.warn("Trip saved but credit deduction failed for trip:", tripId);
-    }
-
-    // Show appropriate message
-    if (itemsWarning) {
-      toast.success("Trip saved! Some details may be incomplete.");
-    } else {
-      toast.success("Trip saved! View it anytime from My Trips.");
-    }
-    console.log("Trip saved with ID:", tripId);
-
-    // Set trip plan and show results
     setTripPlan(plan);
     setIsLoading(false);
-
+    
     // Switch to results mode
     setResultsMode();
 
