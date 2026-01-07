@@ -31,7 +31,7 @@ const Index = () => {
     if (user) {
       try {
         const { data: tripData, error: tripError } = await supabase
-          .from('trips')
+          .from("trips")
           .insert({
             user_id: user.id,
             origin_city: details.departureCity,
@@ -44,7 +44,7 @@ const Index = () => {
             flight_class: details.flightClass,
             include_car: details.includeCarRental,
             include_hotel: details.includeHotel,
-            status: 'planning',
+            status: "planning",
             is_paid: false, // Explicitly set is_paid to false for newly generated trips
           })
           .select()
@@ -55,20 +55,29 @@ const Index = () => {
         // Save itinerary items
         if (tripData && plan.itinerary) {
           const allItems = plan.itinerary.flatMap(day => 
-            day.items.map(item => ({
+            day.items.map((item, index) => ({
               trip_id: tripData.id,
               day_number: day.day,
+              order_in_day: index + 1, // Assuming order_in_day is 1-indexed
               name: item.title,
               description: item.description,
               item_type: item.type,
-              time: item.time,
+              start_time: item.time ? `${day.date}T${item.time}:00Z` : null, // Combine date and time, assume UTC
+              end_time: null, // No explicit end_time in ItineraryItem
               cost: item.cost || 0,
-              included: item.included
+              currency: 'EUR', // Default currency as per DB schema
+              included: item.included,
+              image_url: item.imageUrl || null,
+              booking_url: item.bookingUrl || null,
+              provider_data: {}, // No explicit provider_data in ItineraryItem, use empty object
+              lat: null, // No lat in ItineraryItem
+              lon: null, // No lon in ItineraryItem
+              distance_from: null, // No distance_from in ItineraryItem
             }))
           );
 
           const { error: itemsError } = await supabase
-            .from('trip_items')
+            .from("trip_items")
             .insert(allItems);
 
           if (itemsError) throw itemsError;
