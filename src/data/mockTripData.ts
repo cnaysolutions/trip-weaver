@@ -123,6 +123,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         description: "Your flight has landed. Welcome to your destination!",
         type: "flight" as const,
         included: true,
+        imageUrl: "https://images.unsplash.com/photo-1556388158-158ea5b6d841?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport" )
       },
       {
         id: "d1-2",
@@ -132,6 +134,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "transport" as const,
         distance: "Airport terminal",
         included: details.includeCarRental,
+        imageUrl: "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental" )
       },
       {
         id: "d1-3",
@@ -141,6 +145,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "hotel" as const,
         distance: "18 km from airport",
         included: details.includeHotel,
+        imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel" )
       },
       {
         id: "d1-4",
@@ -150,6 +156,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "attraction" as const,
         distance: "Walking distance",
         included: true,
+        imageUrl: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " walking tour" )
       },
       {
         id: "d1-5",
@@ -159,6 +167,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "meal" as const,
         cost: 75,
         included: true,
+        imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants" )
       },
     ],
   });
@@ -179,6 +189,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
           description: "Start your day with a relaxed breakfast. Review your day's itinerary.",
           type: "meal" as const,
           included: true,
+          imageUrl: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast" )
         },
         {
           id: `d${day}-2`,
@@ -189,6 +201,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
           distance: attractions[0].distance,
           cost: attractions[0].cost,
           included: true,
+          imageUrl: attractions[0].imageUrl,
+          bookingUrl: attractions[0].bookingUrl
         },
         {
           id: `d${day}-3`,
@@ -198,6 +212,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
           type: "meal" as const,
           cost: 40,
           included: true,
+          imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants" )
         },
         {
           id: `d${day}-4`,
@@ -208,6 +224,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
           distance: attractions[1].distance,
           cost: attractions[1].cost,
           included: true,
+          imageUrl: attractions[1].imageUrl,
+          bookingUrl: attractions[1].bookingUrl
         },
         {
           id: `d${day}-5`,
@@ -218,6 +236,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
           distance: attractions[2].distance,
           cost: attractions[2].cost,
           included: true,
+          imageUrl: attractions[2].imageUrl,
+          bookingUrl: attractions[2].bookingUrl
         },
         {
           id: `d${day}-6`,
@@ -226,6 +246,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
           description: "Head back to freshen up before dinner.",
           type: "rest" as const,
           included: true,
+          imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " hotel" )
         },
         {
           id: `d${day}-7`,
@@ -235,6 +257,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
           type: "meal" as const,
           cost: 85,
           included: true,
+          imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " dining" )
         },
       ],
     });
@@ -253,6 +277,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         description: "Enjoy your last morning at the hotel. Double-check your belongings.",
         type: "meal" as const,
         included: true,
+        imageUrl: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast" )
       },
       {
         id: `d${tripDays}-2`,
@@ -261,6 +287,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         description: "Complete check-out. Ensure nothing is left behind.",
         type: "hotel" as const,
         included: details.includeHotel,
+        imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel" )
       },
       {
         id: `d${tripDays}-3`,
@@ -270,6 +298,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "attraction" as const,
         cost: 0,
         included: true,
+        imageUrl: "https://images.unsplash.com/photo-1555529669-e69e7ea0bb29?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " shopping" )
       },
       {
         id: `d${tripDays}-4`,
@@ -279,6 +309,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "transport" as const,
         distance: "Airport terminal",
         included: details.includeCarRental,
+        imageUrl: "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental" )
       },
       {
         id: `d${tripDays}-5`,
@@ -287,6 +319,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         description: "Arrive at the airport with plenty of time. Browse duty-free if desired.",
         type: "flight" as const,
         included: true,
+        imageUrl: "https://images.unsplash.com/photo-1556388158-158ea5b6d841?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport" )
       },
       {
         id: `d${tripDays}-6`,
@@ -295,6 +329,8 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
         description: "Board your flight home. Safe travels!",
         type: "flight" as const,
         included: true,
+        imageUrl: "https://images.unsplash.com/photo-1556388158-158ea5b6d841?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.departureCity + " airport" )
       },
     ],
   });
@@ -305,29 +341,82 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
 function getRandomAttractions(city: string, seed: number) {
   const genericAttractions = [
     [
-      { name: "Historic City Center", description: "Explore the charming old town with its cobblestone streets and centuries-old architecture.", distance: "3 km", cost: 0 },
-      { name: "National Museum", description: "Discover the rich cultural heritage through art and historical artifacts.", distance: "2.5 km", cost: 18 },
-      { name: "Central Park & Gardens", description: "Stroll through beautifully manicured gardens and enjoy the local flora.", distance: "4 km", cost: 0 },
+      { 
+        name: "Historic City Center", 
+        description: "Explore the charming old town with its cobblestone streets and centuries-old architecture.", 
+        distance: "3 km", 
+        cost: 0,
+        imageUrl: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " walking tour" )
+      },
+      { 
+        name: "National Museum", 
+        description: "Discover the rich cultural heritage through art and historical artifacts.", 
+        distance: "2.5 km", 
+        cost: 18,
+        imageUrl: "https://images.unsplash.com/photo-1518998053502-53cc8efd9aee?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " museum" )
+      },
+      { 
+        name: "Central Park & Gardens", 
+        description: "Stroll through beautifully manicured gardens and enjoy the local flora.", 
+        distance: "4 km", 
+        cost: 0,
+        imageUrl: "https://images.unsplash.com/photo-1580137189272-c9379f8864fd?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " park" )
+      },
     ],
     [
-      { name: "Cathedral & Religious Quarter", description: "Visit stunning religious architecture and learn about local traditions.", distance: "2 km", cost: 12 },
-      { name: "Local Market Experience", description: "Immerse yourself in local culture at the bustling market. Try street food and crafts.", distance: "3.5 km", cost: 25 },
-      { name: "Panoramic Viewpoint", description: "Enjoy breathtaking views of the city from a famous observation point.", distance: "6 km", cost: 15 },
+      { 
+        name: "Cathedral & Religious Quarter", 
+        description: "Visit stunning religious architecture and learn about local traditions.", 
+        distance: "2 km", 
+        cost: 12,
+        imageUrl: "https://images.unsplash.com/photo-1548661762-4646fa58339a?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " cathedral" )
+      },
+      { 
+        name: "Local Market Experience", 
+        description: "Immerse yourself in local culture at the bustling market. Try street food and crafts.", 
+        distance: "3.5 km", 
+        cost: 25,
+        imageUrl: "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " market" )
+      },
+      { 
+        name: "Panoramic Viewpoint", 
+        description: "Enjoy breathtaking views of the city from a famous observation point.", 
+        distance: "6 km", 
+        cost: 15,
+        imageUrl: "https://images.unsplash.com/photo-1449156001935-d2863fb22690?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " viewpoint" )
+      },
     ],
     [
-      { name: "Modern Art Gallery", description: "Explore contemporary works from local and international artists.", distance: "2.8 km", cost: 20 },
-      { name: "Waterfront Promenade", description: "Walk along the scenic waterfront with cafes and street performers.", distance: "4.5 km", cost: 0 },
-      { name: "Evening Food Tour", description: "Sample local delicacies with a guided culinary walking tour.", distance: "Walking tour", cost: 55 },
-    ],
-    [
-      { name: "Royal Palace", description: "Tour the magnificent palace and learn about the region's royal history.", distance: "5 km", cost: 22 },
-      { name: "Artisan Quarter", description: "Discover local craftspeople and their traditional techniques.", distance: "3.2 km", cost: 0 },
-      { name: "Sunset Boat Cruise", description: "End the day with a relaxing cruise and stunning sunset views.", distance: "Marina", cost: 45 },
-    ],
-    [
-      { name: "Archaeological Site", description: "Explore ancient ruins and learn about civilizations past.", distance: "12 km", cost: 28 },
-      { name: "Wine & Cheese Tasting", description: "Sample local wines and artisanal cheeses at a family vineyard.", distance: "15 km", cost: 60 },
-      { name: "Traditional Performance", description: "Experience authentic local music and dance at a cultural venue.", distance: "4 km", cost: 35 },
+      { 
+        name: "Modern Art Gallery", 
+        description: "Explore contemporary works from local and international artists.", 
+        distance: "2.8 km", 
+        cost: 20,
+        imageUrl: "https://images.unsplash.com/photo-1518998053502-53cc8efd9aee?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " art gallery" )
+      },
+      { 
+        name: "Waterfront Promenade", 
+        description: "Walk along the scenic waterfront with cafes and street performers.", 
+        distance: "4.5 km", 
+        cost: 0,
+        imageUrl: "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " waterfront" )
+      },
+      { 
+        name: "Evening Food Tour", 
+        description: "Sample local delicacies with a guided culinary walking tour.", 
+        distance: "Walking tour", 
+        cost: 55,
+        imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(city + " food tour" )
+      },
     ],
   ];
 
