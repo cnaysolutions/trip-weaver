@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { TripIntakeForm } from "@/components/TripIntakeForm";
 import { TripResults } from "@/components/TripResults";
 import { Footer } from "@/components/Footer";
-import { ContactSection } from "@/components/ContactSection";
+import { ContactForm } from "@/components/ContactForm";
 import { generateMockTripPlan } from "@/data/mockTripData";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import type { TripDetails, TripPlan } from "@/types/trip";
 
 const Index = () => {
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
   const { theme, mode, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
 
   const handleFormSubmit = async (details: TripDetails) => {
@@ -23,6 +26,58 @@ const Index = () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const plan = generateMockTripPlan(details);
+    
+    // Save to Supabase if user is logged in
+    if (user) {
+      try {
+        const { data: tripData, error: tripError } = await supabase
+          .from('trips')
+          .insert({
+            user_id: user.id,
+            origin_city: details.departureCity,
+            destination_city: details.destinationCity,
+            departure_date: details.departureDate?.toISOString() || new Date().toISOString(),
+            return_date: details.returnDate?.toISOString() || new Date().toISOString(),
+            adults: details.passengers.adults,
+            children: details.passengers.children,
+            infants: details.passengers.infants,
+            flight_class: details.flightClass,
+            include_car: details.includeCarRental,
+            include_hotel: details.includeHotel,
+            status: 'planning',
+            is_paid: false, // Explicitly set is_paid to false for newly generated trips
+          })
+          .select()
+          .single();
+
+        if (tripError) throw tripError;
+
+        // Save itinerary items
+        if (tripData && plan.itinerary) {
+          const allItems = plan.itinerary.flatMap(day => 
+            day.items.map(item => ({
+              trip_id: tripData.id,
+              day_number: day.day,
+              name: item.title,
+              description: item.description,
+              item_type: item.type,
+              time: item.time,
+              cost: item.cost || 0,
+              included: item.included
+            }))
+          );
+
+          const { error: itemsError } = await supabase
+            .from('trip_items')
+            .insert(allItems);
+
+          if (itemsError) throw itemsError;
+        }
+      } catch (error) {
+        console.error("Error saving trip:", error);
+      }
+    }
+
     setTripPlan(plan);
     setIsLoading(false);
     
@@ -109,7 +164,12 @@ const Index = () => {
             </div>
             <TripIntakeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
           </main>
-          <ContactSection />
+
+          <section id="contact" className="bg-secondary/20 py-20 border-y border-border">
+            <div className="container mx-auto px-4 max-w-2xl">
+              <ContactForm />
+            </div>
+          </section>
         </>
       ) : (
         <main className="container mx-auto px-4 py-12 max-w-4xl">
