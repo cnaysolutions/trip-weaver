@@ -1,282 +1,383 @@
-import { TripDetails, TripPlan, Flight, CarRental, Hotel, DayItinerary, ItineraryItem } from "@/types/trip";
+import type { TripPlan, TripDetails } from "@/types/trip";
+import { addDays, format } from "date-fns";
 
-// Helper to generate a unique ID
-const generateId = () => Math.random().toString(36).substring(2, 15);
+export function generateMockTripPlan(details: TripDetails): TripPlan {
+  const departureDate = details.departureDate || new Date();
+  const returnDate = details.returnDate || addDays(departureDate, 5);
+  const tripDays = Math.ceil((returnDate.getTime() - departureDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-export const generateMockTripPlan = (details: TripDetails): TripPlan => {
-  const { departureCity, destinationCity, departureDate, returnDate, passengers, flightClass, includeCarRental, includeHotel } = details;
+  const originCode = getAirportCode(details.departureCity);
+  const destCode = getAirportCode(details.destinationCity);
 
-  const numTravelers = passengers.adults + passengers.children + passengers.infants;
+  const baseFlightPrice = details.flightClass === "first" 
+    ? 1200 
+    : details.flightClass === "business" 
+      ? 650 
+      : 320;
 
-  const mockOutboundFlight: Flight = {
-    id: generateId(),
-    airline: "SkyWings Airlines",
-    flightNumber: "SW123",
-    origin: departureCity,
-    originCode: "PAR",
-    destination: destinationCity,
-    destinationCode: "TOK",
-    departureTime: "09:15",
-    arrivalTime: "12:45",
-    duration: "12h 30m",
-    class: flightClass,
-    pricePerPerson: 356,
-    included: true,
+  return {
+    outboundFlight: {
+      id: "outbound-1",
+      airline: "SkyWings Airlines",
+      flightNumber: "SW 1247",
+      origin: details.departureCity,
+      originCode,
+      destination: details.destinationCity,
+      destinationCode: destCode,
+      departureTime: "09:15",
+      arrivalTime: "12:45",
+      duration: "3h 30m",
+      class: details.flightClass,
+      pricePerPerson: baseFlightPrice + Math.floor(Math.random() * 80),
+      included: true,
+    },
+    returnFlight: {
+      id: "return-1",
+      airline: "SkyWings Airlines",
+      flightNumber: "SW 1248",
+      origin: details.destinationCity,
+      originCode: destCode,
+      destination: details.departureCity,
+      destinationCode: originCode,
+      departureTime: "18:30",
+      arrivalTime: "22:00",
+      duration: "3h 30m",
+      class: details.flightClass,
+      pricePerPerson: baseFlightPrice + Math.floor(Math.random() * 80),
+      included: true,
+    },
+    carRental: details.includeCarRental
+      ? {
+          id: "car-1",
+          company: "EuroMobility",
+          vehicleType: "SUV",
+          vehicleName: "Volkswagen Tiguan or similar",
+          pickupLocation: `${details.destinationCity} Airport`,
+          dropoffLocation: `${details.destinationCity} Airport`,
+          pickupTime: format(departureDate, "MMM d, HH:mm"),
+          dropoffTime: format(returnDate, "MMM d, HH:mm"),
+          pricePerDay: 65,
+          totalPrice: 65 * tripDays,
+          included: true,
+        }
+      : null,
+    hotel: details.includeHotel
+      ? {
+          id: "hotel-1",
+          name: `Grand ${details.destinationCity} Palace Hotel`,
+          rating: 4,
+          address: `123 Central Avenue, ${details.destinationCity}`,
+          distanceFromAirport: "18 km",
+          pricePerNight: 185,
+          totalPrice: 185 * (tripDays - 1),
+          amenities: ["Free WiFi", "Spa", "Restaurant", "Pool", "Gym", "Room Service"],
+          included: true,
+        }
+      : null,
+    itinerary: generateDayItineraries(details, tripDays),
+    totalCost: 0,
   };
+}
 
-  const mockReturnFlight: Flight = {
-    id: generateId(),
-    airline: "SkyWings Airlines",
-    flightNumber: "SW321",
-    origin: destinationCity,
-    originCode: "TOK",
-    destination: departureCity,
-    destinationCode: "PAR",
-    departureTime: "18:30",
-    arrivalTime: "22:00",
-    duration: "11h 30m",
-    class: flightClass,
-    pricePerPerson: 378,
-    included: true,
+function getAirportCode(city: string): string {
+  const codes: Record<string, string> = {
+    london: "LHR",
+    paris: "CDG",
+    "new york": "JFK",
+    rome: "FCO",
+    tokyo: "NRT",
+    bali: "DPS",
+    dubai: "DXB",
+    barcelona: "BCN",
+    amsterdam: "AMS",
+    berlin: "BER",
+    madrid: "MAD",
+    lisbon: "LIS",
+    vienna: "VIE",
+    prague: "PRG",
+    sydney: "SYD",
+    singapore: "SIN",
+    bangkok: "BKK",
+    istanbul: "IST",
+    athens: "ATH",
+    zurich: "ZRH",
   };
+  
+  const normalized = city.toLowerCase().trim();
+  return codes[normalized] || city.substring(0, 3).toUpperCase();
+}
 
-  const mockCarRental: CarRental | null = includeCarRental ? {
-    id: generateId(),
-    company: "EuroMobility",
-    vehicleType: "SUV",
-    vehicleName: "Volkswagen Tiguan or similar",
-    pickupLocation: "Tokyo Narita Airport (NRT)",
-    dropoffLocation: "Tokyo Narita Airport (NRT)",
-    pickupTime: new Date(departureDate!).toISOString(),
-    dropoffTime: new Date(returnDate!).toISOString(),
-    pricePerDay: 80,
-    totalPrice: 520, // Example total for 6.5 days
-    included: true,
-  } : null;
+function generateDayItineraries(details: TripDetails, tripDays: number) {
+  const departureDate = details.departureDate || new Date();
+  const itineraries = [];
 
-  const mockHotel: Hotel | null = includeHotel ? {
-    id: generateId(),
-    name: "Grand Hyatt Tokyo",
-    rating: 4.5,
-    address: "Roppongi Hills, 6-10-3 Roppongi, Minato City, Tokyo 106-0032, Japan",
-    distanceFromAirport: "60km",
-    pricePerNight: 250,
-    totalPrice: 1750, // Example total for 7 nights
-    amenities: ["Free WiFi", "Pool", "Spa", "Fitness Center"],
-    included: true,
-  } : null;
+  // Day 1 - Arrival
+  itineraries.push({
+    day: 1,
+    date: format(departureDate, "yyyy-MM-dd"),
+    items: [
+      {
+        id: "d1-1",
+        time: "12:45",
+        title: `Arrival at ${details.destinationCity} Airport`,
+        description: "Your flight has landed. Welcome to your destination!",
+        type: "flight" as const,
+        included: true,
+        imageUrl: "https://images.unsplash.com/photo-1556388158-158ea5b6d841?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport" )
+      },
+      {
+        id: "d1-2",
+        time: "13:30",
+        title: "Car Rental Pickup",
+        description: `Collect your vehicle from the airport rental desk. Allow 30-45 minutes for paperwork and vehicle inspection.`,
+        type: "transport" as const,
+        distance: "Airport terminal",
+        included: details.includeCarRental,
+        imageUrl: "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental" )
+      },
+      {
+        id: "d1-3",
+        time: "14:30",
+        title: "Hotel Check-in",
+        description: `Arrive at Grand ${details.destinationCity} Palace Hotel. Take time to settle in and refresh after your journey.`,
+        type: "hotel" as const,
+        distance: "18 km from airport",
+        included: details.includeHotel,
+        imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel" )
+      },
+      {
+        id: "d1-4",
+        time: "16:00",
+        title: "Light Exploration",
+        description: "Take a leisurely walk around your hotel neighborhood. Discover local cafes and get your bearings.",
+        type: "attraction" as const,
+        distance: "Walking distance",
+        included: true,
+        imageUrl: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " walking tour" )
+      },
+      {
+        id: "d1-5",
+        time: "19:30",
+        title: "Welcome Dinner",
+        description: `Enjoy an authentic local dining experience. Ask your hotel concierge for recommendations nearby.`,
+        type: "meal" as const,
+        cost: 75,
+        included: true,
+        imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants" )
+      },
+    ],
+  });
 
-  const mockItinerary: DayItinerary[] = [
-    {
-      day: 1,
-      date: departureDate ? format(departureDate, "yyyy-MM-dd") : "",
+  // Middle days - Exploration
+  for (let day = 2; day < tripDays; day++) {
+    const dayDate = addDays(departureDate, day - 1);
+    const attractions = getRandomAttractions(details.destinationCity, day);
+    
+    itineraries.push({
+      day,
+      date: format(dayDate, "yyyy-MM-dd"),
       items: [
         {
-          id: generateId(),
-          time: "15:00",
-          title: "Check-in at Grand Hyatt Tokyo",
-          description: "Settle into your luxurious accommodation in the heart of Roppongi.",
-          type: "hotel",
-          included: true,
-          imageUrl: "https://example.com/grand-hyatt-tokyo.jpg",
-          bookingUrl: "https://www.hyatt.com/en-US/hotel/japan/grand-hyatt-tokyo/tyogh",
-        },
-        {
-          id: generateId( ),
-          time: "19:00",
-          title: "Dinner at Gonpachi Nishiazabu",
-          description: "Enjoy traditional Japanese cuisine in a vibrant atmosphere, famous for its appearance in \"Kill Bill.\"",
-          type: "meal",
-          cost: 70,
-          included: true,
-          imageUrl: "https://example.com/gonpachi.jpg",
-          bookingUrl: "https://gonpachi.jp/nishiazabu/",
-        },
-      ],
-    },
-    {
-      day: 2,
-      date: departureDate ? format(addDays(departureDate, 1 ), "yyyy-MM-dd") : "",
-      items: [
-        {
-          id: generateId(),
-          time: "09:00",
-          title: "Visit Meiji Jingu Shrine",
-          description: "Explore the serene Shinto shrine dedicated to Emperor Meiji and Empress Shoken.",
-          type: "attraction",
-          included: true,
-          imageUrl: "https://example.com/meiji-jingu.jpg",
-          bookingUrl: "https://www.meijijingu.or.jp/en/",
-        },
-        {
-          id: generateId( ),
-          time: "12:00",
-          title: "Lunch in Harajuku",
-          description: "Experience the unique fashion and culture of Takeshita Street.",
-          type: "meal",
-          cost: 30,
-          included: true,
-          imageUrl: "https://example.com/harajuku-lunch.jpg",
-          bookingUrl: "",
-        },
-        {
-          id: generateId( ),
-          time: "15:00",
-          title: "Shibuya Crossing & Hachiko Statue",
-          description: "Witness the iconic scramble crossing and visit the loyal dog Hachiko statue.",
-          type: "attraction",
-          included: true,
-          imageUrl: "https://example.com/shibuya-crossing.jpg",
-          bookingUrl: "",
-        },
-      ],
-    },
-    {
-      day: 3,
-      date: departureDate ? format(addDays(departureDate, 2 ), "yyyy-MM-dd") : "",
-      items: [
-        {
-          id: generateId(),
-          time: "09:30",
-          title: "Explore Asakusa and Senso-ji Temple",
-          description: "Tokyo's oldest temple, with Nakamise-dori market leading up to it.",
-          type: "attraction",
-          included: true,
-          imageUrl: "https://example.com/sensoji-temple.jpg",
-          bookingUrl: "",
-        },
-        {
-          id: generateId( ),
-          time: "13:00",
-          title: "Sumida River Cruise",
-          description: "Enjoy views of the Tokyo Skytree and other landmarks from the water.",
-          type: "attraction",
-          cost: 20,
-          included: true,
-          imageUrl: "https://example.com/sumida-river-cruise.jpg",
-          bookingUrl: "https://www.suijobus.co.jp/en/",
-        },
-        {
-          id: generateId( ),
-          time: "18:00",
-          title: "Dinner in Ginza",
-          description: "Dine in Tokyo's upscale shopping district.",
-          type: "meal",
-          cost: 80,
-          included: true,
-          imageUrl: "https://example.com/ginza-dinner.jpg",
-          bookingUrl: "",
-        },
-      ],
-    },
-    {
-      day: 4,
-      date: departureDate ? format(addDays(departureDate, 3 ), "yyyy-MM-dd") : "",
-      items: [
-        {
-          id: generateId(),
+          id: `d${day}-1`,
           time: "08:00",
-          title: "Day Trip to Hakone",
-          description: "Scenic views of Mount Fuji, Hakone Open-Air Museum, and a cruise on Lake Ashi.",
-          type: "attraction",
-          cost: 100,
+          title: "Breakfast at Hotel",
+          description: "Start your day with a relaxed breakfast. Review your day's itinerary.",
+          type: "meal" as const,
           included: true,
-          imageUrl: "https://example.com/hakone.jpg",
-          bookingUrl: "https://www.hakone-japan.com/",
+          imageUrl: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast" )
         },
         {
-          id: generateId( ),
-          time: "19:00",
-          title: "Return to Tokyo, Dinner at local izakaya",
-          description: "Experience casual Japanese dining with small dishes and drinks.",
-          type: "meal",
+          id: `d${day}-2`,
+          time: "09:30",
+          title: attractions[0].name,
+          description: attractions[0].description,
+          type: "attraction" as const,
+          distance: attractions[0].distance,
+          cost: attractions[0].cost,
+          included: true,
+          imageUrl: attractions[0].imageUrl,
+          bookingUrl: attractions[0].bookingUrl
+        },
+        {
+          id: `d${day}-3`,
+          time: "12:30",
+          title: "Lunch Break",
+          description: "Find a local restaurant for lunch. Take time to rest and recharge.",
+          type: "meal" as const,
           cost: 40,
           included: true,
-          imageUrl: "https://example.com/izakaya.jpg",
-          bookingUrl: "",
+          imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants" )
         },
-      ],
-    },
-    {
-      day: 5,
-      date: departureDate ? format(addDays(departureDate, 4 ), "yyyy-MM-dd") : "",
-      items: [
         {
-          id: generateId(),
-          time: "10:00",
-          title: "Ghibli Museum (requires advance booking)",
-          description: "Immerse yourself in the world of Studio Ghibli. Book tickets well in advance!",
-          type: "attraction",
-          cost: 10,
+          id: `d${day}-4`,
+          time: "14:30",
+          title: attractions[1].name,
+          description: attractions[1].description,
+          type: "attraction" as const,
+          distance: attractions[1].distance,
+          cost: attractions[1].cost,
           included: true,
-          imageUrl: "https://example.com/ghibli-museum.jpg",
-          bookingUrl: "https://www.ghibli-museum.jp/en/",
+          imageUrl: attractions[1].imageUrl,
+          bookingUrl: attractions[1].bookingUrl
         },
         {
-          id: generateId( ),
-          time: "14:00",
-          title: "Explore Kichijoji",
-          description: "Enjoy shopping and cafes around Kichijoji, near the Ghibli Museum.",
-          type: "attraction",
+          id: `d${day}-5`,
+          time: "17:00",
+          title: attractions[2].name,
+          description: attractions[2].description,
+          type: "attraction" as const,
+          distance: attractions[2].distance,
+          cost: attractions[2].cost,
           included: true,
-          imageUrl: "https://example.com/kichijoji.jpg",
-          bookingUrl: "",
+          imageUrl: attractions[2].imageUrl,
+          bookingUrl: attractions[2].bookingUrl
         },
         {
-          id: generateId( ),
+          id: `d${day}-6`,
           time: "19:00",
-          title: "Farewell Dinner in Shinjuku",
-          description: "Enjoy panoramic city views from a skyscraper restaurant.",
-          type: "meal",
-          cost: 90,
+          title: "Return to Hotel",
+          description: "Head back to freshen up before dinner.",
+          type: "rest" as const,
           included: true,
-          imageUrl: "https://example.com/shinjuku-dinner.jpg",
-          bookingUrl: "",
+          imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " hotel" )
+        },
+        {
+          id: `d${day}-7`,
+          time: "20:00",
+          title: "Dinner",
+          description: "Evening dining experience. Explore different neighborhoods each night.",
+          type: "meal" as const,
+          cost: 85,
+          included: true,
+          imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " dining" )
         },
       ],
+    });
+  }
+
+  // Last day - Departure
+  const lastDate = addDays(departureDate, tripDays - 1);
+  itineraries.push({
+    day: tripDays,
+    date: format(lastDate, "yyyy-MM-dd"),
+    items: [
+      {
+        id: `d${tripDays}-1`,
+        time: "08:00",
+        title: "Final Breakfast",
+        description: "Enjoy your last morning at the hotel. Double-check your belongings.",
+        type: "meal" as const,
+        included: true,
+        imageUrl: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast" )
+      },
+      {
+        id: `d${tripDays}-2`,
+        time: "10:00",
+        title: "Hotel Check-out",
+        description: "Complete check-out. Ensure nothing is left behind.",
+        type: "hotel" as const,
+        included: details.includeHotel,
+        imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel" )
+      },
+      {
+        id: `d${tripDays}-3`,
+        time: "11:00",
+        title: "Car Rental Return",
+        description: "Return your rental car at the airport. Allow time for inspection and shuttle to the terminal.",
+        type: "transport" as const,
+        included: details.includeCarRental,
+        imageUrl: "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental" )
+      },
+      {
+        id: `d${tripDays}-4`,
+        time: "14:00",
+        title: `Departure from ${details.destinationCity} Airport`,
+        description: "Board your flight home. We hope you had a wonderful trip!",
+        type: "flight" as const,
+        included: true,
+        imageUrl: "https://images.unsplash.com/photo-1556388158-158ea5b6d841?auto=format&fit=crop&w=800&q=80",
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport" )
+      },
+    ],
+  });
+
+  return itineraries;
+}
+
+function getRandomAttractions(destinationCity: string, day: number): ItineraryItem[] {
+  const attractionsPool = [
+    {
+      name: "Explore Local Market",
+      description: "Immerse yourself in the local culture and find unique souvenirs.",
+      distance: "City center",
+      cost: 0,
+      imageUrl: "https://images.unsplash.com/photo-1534447677768-bfe9d0c8149d?auto=format&fit=crop&w=800&q=80",
+      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " market" )
     },
     {
-      day: 6,
-      date: departureDate ? format(addDays(departureDate, 5 ), "yyyy-MM-dd") : "",
-      items: [
-        {
-          id: generateId(),
-          time: "10:00",
-          title: "Free time for last-minute souvenir shopping",
-          description: "Explore local markets or revisit favorite spots.",
-          type: "rest",
-          included: true,
-          imageUrl: "https://example.com/souvenir-shopping.jpg",
-          bookingUrl: "",
-        },
-        {
-          id: generateId( ),
-          time: "14:00",
-          title: "Depart from Tokyo Narita Airport (NRT)",
-          description: "Head to the airport for your return flight.",
-          type: "flight",
-          included: true,
-          imageUrl: "https://example.com/narita-airport.jpg",
-          bookingUrl: "",
-        },
-      ],
+      name: "Visit a Museum",
+      description: "Discover art, history, or science at a renowned local museum.",
+      distance: "Varies",
+      cost: 25,
+      imageUrl: "https://images.unsplash.com/photo-1532629600-b1473136270a?auto=format&fit=crop&w=800&q=80",
+      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " museum" )
+    },
+    {
+      name: "Relax at a Park",
+      description: "Enjoy a peaceful afternoon in one of the city's beautiful parks.",
+      distance: "Varies",
+      cost: 0,
+      imageUrl: "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=800&q=80",
+      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " park" )
+    },
+    {
+      name: "Take a Cooking Class",
+      description: "Learn to prepare local delicacies with a hands-on cooking experience.",
+      distance: "Varies",
+      cost: 90,
+      imageUrl: "https://images.unsplash.com/photo-1590987930104-949479e083f8?auto=format&fit=crop&w=800&q=80",
+      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " cooking class" )
+    },
+    {
+      name: "Go on a Guided Tour",
+      description: "Explore the city's highlights with an expert local guide.",
+      distance: "Varies",
+      cost: 50,
+      imageUrl: "https://images.unsplash.com/photo-1520250403390-346747201f65?auto=format&fit=crop&w=800&q=80",
+      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " guided tour" )
     },
   ];
 
-  const totalCost = (
-    (mockOutboundFlight.included ? mockOutboundFlight.pricePerPerson * numTravelers : 0 ) +
-    (mockReturnFlight.included ? mockReturnFlight.pricePerPerson * numTravelers : 0) +
-    (mockCarRental?.included ? mockCarRental.totalPrice : 0) +
-    (mockHotel?.included ? mockHotel.totalPrice : 0) +
-    mockItinerary.reduce((sum, day) => sum + day.items.reduce((daySum, item) => daySum + (item.included && item.cost ? item.cost * numTravelers : 0), 0), 0)
-  );
+  // Simple pseudo-random selection based on day number to ensure variety
+  const selectedAttractions = [
+    attractionsPool[(day * 1) % attractionsPool.length],
+    attractionsPool[(day * 2) % attractionsPool.length],
+    attractionsPool[(day * 3) % attractionsPool.length],
+  ];
 
-  return {
-    outboundFlight: mockOutboundFlight,
-    returnFlight: mockReturnFlight,
-    carRental: mockCarRental,
-    hotel: mockHotel,
-    itinerary: mockItinerary,
-    totalCost: totalCost,
-  };
-};
+  return selectedAttractions.map((attraction, index) => ({
+    id: `d${day}-attraction-${index + 1}`,
+    time: "", // Time will be set by the calling function
+    title: attraction.name,
+    description: attraction.description,
+    type: "attraction" as const,
+    distance: attraction.distance,
+    cost: attraction.cost,
+    included: true,
+    imageUrl: attraction.imageUrl,
+    bookingUrl: attraction.bookingUrl
+  }));
+}
+
