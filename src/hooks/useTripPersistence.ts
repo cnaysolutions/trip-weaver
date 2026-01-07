@@ -6,12 +6,13 @@ import { format } from "date-fns";
 interface SaveTripResult {
   tripId: string | null;
   error: Error | null;
+  itemsWarning?: boolean;
 }
 
 export function useTripPersistence() {
   /**
-   * Save trip to database. Credit deduction happens BEFORE this is called
-   * in the form submission flow. This function purely handles persistence.
+   * Save trip to database. Returns tripId if the main trip record succeeds.
+   * Item save failures are logged but don't block the trip from being considered saved.
    */
   const saveTrip = async (
     userId: string,
@@ -19,7 +20,7 @@ export function useTripPersistence() {
     tripPlan: TripPlan
   ): Promise<SaveTripResult> => {
     try {
-      // 1. Insert the trip record
+      // 1. Insert the trip record (this is the critical save)
       const { data: tripData, error: tripError } = await supabase
         .from("trips")
         .insert({
@@ -61,76 +62,28 @@ export function useTripPersistence() {
 
       const tripId = tripData.id;
 
-      // 2. Prepare all trip items
-      const tripItems: Array<{
-        trip_id: string;
-        item_type: string;
-        name: string;
-        description: string | null;
-        cost: number;
-        included: boolean;
-        day_number: number | null;
-        order_in_day: number | null;
-        provider_data: Json | null;
-      }> = [];
+      // 2. Build trip items - handle gracefully if this fails
+      let itemsWarning = false;
+      try {
+        const tripItems = buildTripItems(tripId, tripPlan);
 
-      // Add outbound flight
-      if (tripPlan.outboundFlight) {
-        tripItems.push(mapFlightToItem(tripId, tripPlan.outboundFlight, "outbound", 1, 0));
-      }
+        if (tripItems.length > 0) {
+          const { error: itemsError } = await supabase
+            .from("trip_items")
+            .insert(tripItems);
 
-      // Add return flight
-      if (tripPlan.returnFlight) {
-        const lastDay = tripPlan.itinerary.length || 1;
-        tripItems.push(mapFlightToItem(tripId, tripPlan.returnFlight, "return", lastDay, 99));
-      }
-
-      // Add car rental
-      if (tripPlan.carRental) {
-        tripItems.push(mapCarRentalToItem(tripId, tripPlan.carRental));
-      }
-
-      // Add hotel
-      if (tripPlan.hotel) {
-        tripItems.push(mapHotelToItem(tripId, tripPlan.hotel));
-      }
-
-      // Add itinerary activities
-      tripPlan.itinerary.forEach((day) => {
-        day.items.forEach((item, idx) => {
-          tripItems.push({
-            trip_id: tripId,
-            item_type: item.type === "attraction" ? "activity" : item.type,
-            name: item.title,
-            description: item.description,
-            cost: item.cost || 0,
-            included: item.included,
-            day_number: day.day,
-            order_in_day: idx,
-            provider_data: {
-              time: item.time,
-              distance: item.distance || null,
-              duration: item.duration || null,
-              originalType: item.type,
-            } as Json,
-          });
-        });
-      });
-
-      // 3. Insert all trip items
-      if (tripItems.length > 0) {
-        const { error: itemsError } = await supabase
-          .from("trip_items")
-          .insert(tripItems);
-
-        if (itemsError) {
-          console.error("Trip items insert error:", itemsError);
-          throw itemsError;
+          if (itemsError) {
+            console.error("Trip items insert error:", itemsError);
+            itemsWarning = true;
+          }
         }
+      } catch (itemsErr) {
+        console.error("Error building trip items:", itemsErr);
+        itemsWarning = true;
       }
 
-      console.log(`Trip ${tripId} saved with ${tripItems.length} items`);
-      return { tripId, error: null };
+      console.log(`Trip ${tripId} saved${itemsWarning ? " (items had warnings)" : ""}`);
+      return { tripId, error: null, itemsWarning };
     } catch (error) {
       console.error("Error saving trip:", error);
       return { tripId: null, error: error as Error };
@@ -138,6 +91,66 @@ export function useTripPersistence() {
   };
 
   return { saveTrip };
+}
+
+// Build all trip items from the plan
+function buildTripItems(tripId: string, tripPlan: TripPlan) {
+  const items: Array<{
+    trip_id: string;
+    item_type: string;
+    name: string;
+    description: string | null;
+    cost: number;
+    included: boolean;
+    day_number: number | null;
+    order_in_day: number | null;
+    provider_data: Json;
+  }> = [];
+
+  // Add outbound flight
+  if (tripPlan.outboundFlight) {
+    items.push(mapFlightToItem(tripId, tripPlan.outboundFlight, "outbound", 1, 0));
+  }
+
+  // Add return flight
+  if (tripPlan.returnFlight) {
+    const lastDay = tripPlan.itinerary.length || 1;
+    items.push(mapFlightToItem(tripId, tripPlan.returnFlight, "return", lastDay, 99));
+  }
+
+  // Add car rental
+  if (tripPlan.carRental) {
+    items.push(mapCarRentalToItem(tripId, tripPlan.carRental));
+  }
+
+  // Add hotel
+  if (tripPlan.hotel) {
+    items.push(mapHotelToItem(tripId, tripPlan.hotel));
+  }
+
+  // Add itinerary activities
+  tripPlan.itinerary.forEach((day) => {
+    day.items.forEach((item, idx) => {
+      items.push({
+        trip_id: tripId,
+        item_type: item.type === "attraction" ? "activity" : item.type,
+        name: item.title,
+        description: item.description,
+        cost: item.cost || 0,
+        included: item.included,
+        day_number: day.day,
+        order_in_day: idx,
+        provider_data: {
+          time: item.time,
+          distance: item.distance || null,
+          duration: item.duration || null,
+          originalType: item.type,
+        } as Json,
+      });
+    });
+  });
+
+  return items;
 }
 
 function mapFlightToItem(
