@@ -84,6 +84,7 @@ export type Database = {
       }
       trip_items: {
         Row: {
+          booking_url: string | null
           cost: number
           created_at: string
           currency: string
@@ -92,6 +93,7 @@ export type Database = {
           distance_from_previous: number | null
           end_time: string | null
           id: string
+          image_url: string | null
           included: boolean
           item_type: string
           lat: number | null
@@ -104,6 +106,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          booking_url?: string | null
           cost?: number
           created_at?: string
           currency?: string
@@ -112,6 +115,7 @@ export type Database = {
           distance_from_previous?: number | null
           end_time?: string | null
           id?: string
+          image_url?: string | null
           included?: boolean
           item_type: string
           lat?: number | null
@@ -124,6 +128,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          booking_url?: string | null
           cost?: number
           created_at?: string
           currency?: string
@@ -132,6 +137,7 @@ export type Database = {
           distance_from_previous?: number | null
           end_time?: string | null
           id?: string
+          image_url?: string | null
           included?: boolean
           item_type?: string
           lat?: number | null
@@ -176,6 +182,7 @@ export type Database = {
           origin_iata_code: string | null
           origin_lat: number | null
           origin_lon: number | null
+          request_hash: string | null
           return_date: string
           status: string
           updated_at: string
@@ -203,6 +210,7 @@ export type Database = {
           origin_iata_code?: string | null
           origin_lat?: number | null
           origin_lon?: number | null
+          request_hash?: string | null
           return_date: string
           status?: string
           updated_at?: string
@@ -230,6 +238,7 @@ export type Database = {
           origin_iata_code?: string | null
           origin_lat?: number | null
           origin_lon?: number | null
+          request_hash?: string | null
           return_date?: string
           status?: string
           updated_at?: string

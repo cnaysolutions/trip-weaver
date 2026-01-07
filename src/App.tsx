@@ -1,4 +1,3 @@
-import TripDetails from "./pages/TripDetails";
 import TripDetailsPage from "./pages/TripDetails";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -28,8 +27,6 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/trip/:id" element={<TripDetailsPage />} />
-          <Route path="/trip/:id" element={<TripDetails />} />
-
           <Route
             path="/trips"
             element={

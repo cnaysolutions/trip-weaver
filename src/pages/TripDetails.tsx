@@ -50,7 +50,8 @@ export default function TripDetailsPage() {
         returnFlight: items.find((i: any) => i.item_type === 'flight' && (i.provider_data as any)?.direction === 'return')?.provider_data as any,
         carRental: items.find((i: any) => i.item_type === 'car')?.provider_data as any,
         hotel: items.find((i: any) => i.item_type === 'hotel')?.provider_data as any,
-        itinerary: [] // We'll fill this below
+        itinerary: [], // We'll fill this below
+        totalCost: 0 // Will be recalculated by TripResults
       };
 
       // Rebuild the daily itinerary
@@ -95,7 +96,14 @@ export default function TripDetailsPage() {
         <Button variant="ghost" onClick={() => navigate("/trips")} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to My Trips
         </Button>
-        {data && <TripResults tripPlan={data.plan} tripDetails={data.details} />}
+        {data && (
+          <TripResults 
+            tripPlan={data.plan} 
+            tripDetails={data.details} 
+            onToggleItem={() => {}} 
+            onReset={() => navigate("/trips")} 
+          />
+        )}
       </main>
       <Footer />
     </div>
