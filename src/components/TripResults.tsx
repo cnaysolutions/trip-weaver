@@ -56,9 +56,11 @@ interface TripResultsProps {
   tripPlan: TripPlan;
   onToggleItem: (type: string, id: string) => void;
   onReset: () => void;
+  tripRecord?: any; // Raw trip record from database for email
+  tripItems?: any[]; // Raw trip items from database for email
 }
 
-export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: TripResultsProps) {
+export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, tripRecord, tripItems }: TripResultsProps) {
   const [activeDay, setActiveDay] = useState(0);
   const [emailFormat, setEmailFormat] = useState<"text" | "html">("html");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -123,39 +125,49 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: Tr
 
     setIsSendingEmail(true);
 
-    // Use the exact same calculation as totalCost - no assumptions
-    if (totalPassengers === 0) {
-      toast({
-        title: "Missing passenger information",
-        description: "Please go back and specify the number of passengers.",
-        variant: "destructive",
-      });
-      setIsSendingEmail(false);
-      return;
-    }
-
     try {
-      // Build request with explicit passengerCount from calculated totalPassengers
-      const passengerCount = totalPassengers;
-      
-      const requestBody = {
-        email: loggedInEmail,
-        data: {
-          ...tripPlan,
-          passengers: passengerCount,
-          totalCost: totalCost,
-        },
-      };
+      // If we have tripRecord from database, use the new format
+      if (tripRecord) {
+        const { data, error } = await supabase.functions.invoke("send-trip-email", {
+          body: {
+            email: loggedInEmail,
+            trip: tripRecord,
+            tripItems: tripItems || [],
+          },
+        });
 
-      const { data, error } = await supabase.functions.invoke("send-trip-email", {
-        body: requestBody,
-      });
+        if (error) throw error;
+      } else {
+        // Fallback to old format for in-memory trips
+        if (totalPassengers === 0) {
+          toast({
+            title: "Missing passenger information",
+            description: "Please go back and specify the number of passengers.",
+            variant: "destructive",
+          });
+          setIsSendingEmail(false);
+          return;
+        }
 
-      if (error) throw error;
+        const requestBody = {
+          email: loggedInEmail,
+          data: {
+            ...tripPlan,
+            passengers: totalPassengers,
+            totalCost: totalCost,
+          },
+        };
+
+        const { data, error } = await supabase.functions.invoke("send-trip-email", {
+          body: requestBody,
+        });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Email sent!",
-        description: `Itinerary sent for ${totalPassengers} passenger${totalPassengers !== 1 ? 's' : ''}.`,
+        description: `Itinerary sent to ${loggedInEmail}.`,
       });
     } catch (error) {
       console.error("Failed to send email:", error);

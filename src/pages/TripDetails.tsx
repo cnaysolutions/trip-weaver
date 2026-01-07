@@ -4,19 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { TripResults } from "@/components/TripResults";
-import { Loader2, ArrowLeft, Sparkles, Plane, Hotel, Car, MapPin } from "lucide-react";
+import { Loader2, ArrowLeft, Sparkles, Plane, Hotel, Car, MapPin, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { TripPlan, TripDetails } from "@/types/trip";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function TripDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [tripRecord, setTripRecord] = useState<any>(null);
+  const [tripItems, setTripItems] = useState<any[]>([]);
   const [data, setData] = useState<{plan: TripPlan, details: TripDetails} | null>(null);
   const [isPreview, setIsPreview] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     async function fetchSavedTrip() {
@@ -38,6 +44,7 @@ export default function TripDetailsPage() {
 
       // Check if this is a preview trip (no trip_items)
       const items = Array.isArray(trip.trip_items) ? trip.trip_items : [];
+      setTripItems(items);
       
       if (items.length === 0) {
         setIsPreview(true);
@@ -64,7 +71,7 @@ export default function TripDetailsPage() {
         carRental: items.find((i: any) => i.item_type === 'car')?.provider_data as any,
         hotel: items.find((i: any) => i.item_type === 'hotel')?.provider_data as any,
         itinerary: [],
-        totalCost: 0
+        totalCost: items.filter((i: any) => i.included).reduce((sum: number, i: any) => sum + Number(i.cost || 0), 0)
       };
 
       // Rebuild the daily itinerary
@@ -92,6 +99,45 @@ export default function TripDetailsPage() {
 
     fetchSavedTrip();
   }, [id, navigate]);
+
+  const sendEmail = async () => {
+    if (!tripRecord || !user?.email) {
+      toast({
+        title: "Error",
+        description: "Unable to send email. Please make sure you're logged in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      const { data: result, error } = await supabase.functions.invoke("send-trip-email", {
+        body: {
+          email: user.email,
+          trip: tripRecord,
+          tripItems: tripItems,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email sent!",
+        description: `Your itinerary has been sent to ${user.email}`,
+      });
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast({
+        title: "Failed to send email",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -163,6 +209,22 @@ export default function TripDetailsPage() {
                   <Sparkles className="mr-2 h-4 w-4" />
                   Buy Credits to Unlock
                 </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="w-full max-w-xs"
+                  onClick={sendEmail}
+                  disabled={isSendingEmail || !user?.email}
+                >
+                  {isSendingEmail ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="mr-2 h-4 w-4" />
+                  )}
+                  Send Preview to Email
+                </Button>
+                
                 <p className="text-xs text-muted-foreground">
                   1 credit = 1 fully planned trip
                 </p>
@@ -187,7 +249,9 @@ export default function TripDetailsPage() {
             tripPlan={data.plan} 
             tripDetails={data.details} 
             onToggleItem={() => {}} 
-            onReset={() => navigate("/trips")} 
+            onReset={() => navigate("/trips")}
+            tripRecord={tripRecord}
+            tripItems={tripItems}
           />
         )}
       </main>
@@ -195,4 +259,3 @@ export default function TripDetailsPage() {
     </div>
   );
 }
-
