@@ -62,7 +62,7 @@ const Index = () => {
               name: item.title,
               description: item.description,
               item_type: item.type,
-              start_time: item.time ? `${day.date}T${item.time}:00Z` : null, // Combine date and time, assume UTC
+              start_time: item.time && day.date ? `${day.date}T${item.time}:00Z` : null, // Combine YYYY-MM-DD date and time, assume UTC
               end_time: null, // No explicit end_time in ItineraryItem
               cost: item.cost || 0,
               currency: 'EUR', // Default currency as per DB schema
