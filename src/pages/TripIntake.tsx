@@ -77,8 +77,8 @@ export default function TripIntake() {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const plan = generateMockTripPlan(details);
 
-    // Save trip to database FIRST
-    const { tripId, error: saveError } = await saveTrip(user.id, details, plan);
+    // Save trip to database FIRST - only the main trip record is required
+    const { tripId, error: saveError, itemsWarning } = await saveTrip(user.id, details, plan);
     
     if (saveError) {
       console.error("Failed to save trip:", saveError);
@@ -87,15 +87,18 @@ export default function TripIntake() {
       return;
     }
 
-    // Only deduct credit AFTER successful save
+    // Only deduct credit AFTER successful trip record save
     const creditDeducted = await deductCredit();
     if (!creditDeducted) {
-      // Trip was saved but credit deduction failed - this is rare but we should handle it
       console.warn("Trip saved but credit deduction failed for trip:", tripId);
-      // We still show the trip since it was saved successfully
     }
 
-    toast.success("Trip saved! View it anytime from My Trips.");
+    // Show appropriate message
+    if (itemsWarning) {
+      toast.success("Trip saved! Some details may be incomplete.");
+    } else {
+      toast.success("Trip saved! View it anytime from My Trips.");
+    }
     console.log("Trip saved with ID:", tripId);
 
     // Set trip plan and show results
