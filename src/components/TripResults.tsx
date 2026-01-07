@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import {
   Plane,
@@ -56,35 +56,28 @@ interface TripResultsProps {
   tripPlan: TripPlan;
   onToggleItem: (type: string, id: string) => void;
   onReset: () => void;
-  tripRecord?: any; // Raw trip record from database for email
-  tripItems?: any[]; // Raw trip items from database for email
 }
 
-export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, tripRecord, tripItems }: TripResultsProps) {
+export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset }: TripResultsProps) {
   const [activeDay, setActiveDay] = useState(0);
   const [emailFormat, setEmailFormat] = useState<"text" | "html">("html");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Calculate total passengers: adults + children + infants
-  const totalPassengers = useMemo(() => {
-    const adults = tripDetails?.passengers?.adults || 0;
-    const children = tripDetails?.passengers?.children || 0;
-    const infants = tripDetails?.passengers?.infants || 0;
-    const count = adults + children + infants;
-    return count; // Return 0 if no passengers - don't assume
-  }, [tripDetails]);
-
   const totalCost = useMemo(() => {
     let cost = 0;
+    const totalPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0);
     
+    // Flights are already priced per person
     if (tripPlan.outboundFlight?.included) {
       cost += tripPlan.outboundFlight.pricePerPerson * totalPassengers;
     }
     if (tripPlan.returnFlight?.included) {
       cost += tripPlan.returnFlight.pricePerPerson * totalPassengers;
     }
+    
+    // Hotel and car rental are total prices for the group
     if (tripPlan.carRental?.included) {
       cost += tripPlan.carRental.totalPrice;
     }
@@ -92,8 +85,8 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
       cost += tripPlan.hotel.totalPrice;
     }
 
-    (tripPlan.itinerary || []).forEach((day) => {
-      (day?.items || []).forEach((item) => {
+    tripPlan.itinerary.forEach((day) => {
+      day.items.forEach((item) => {
         if (item.included && item.cost) {
           cost += item.cost * totalPassengers;
         }
@@ -101,7 +94,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
     });
 
     return cost;
-  }, [tripPlan, totalPassengers]);
+  }, [tripPlan, tripDetails]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -123,51 +116,40 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
       return;
     }
 
+    if (!tripPlan) {
+      toast({
+        title: "No itinerary",
+        description: "Please complete a trip search first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSendingEmail(true);
+    
+    // Calculate total passengers right here to be absolutely sure
+    const currentPassengers = (tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0) || 1;
+    
+    console.log("Sending email with passengers:", currentPassengers);
 
     try {
-      // If we have tripRecord from database, use the new format
-      if (tripRecord) {
-        const { data, error } = await supabase.functions.invoke("send-trip-email", {
-          body: {
-            email: loggedInEmail,
-            trip: tripRecord,
-            tripItems: tripItems || [],
-          },
-        });
-
-        if (error) throw error;
-      } else {
-        // Fallback to old format for in-memory trips
-        if (totalPassengers === 0) {
-          toast({
-            title: "Missing passenger information",
-            description: "Please go back and specify the number of passengers.",
-            variant: "destructive",
-          });
-          setIsSendingEmail(false);
-          return;
-        }
-
-        const requestBody = {
+      const { data, error } = await supabase.functions.invoke("send-trip-email", {
+        body: {
           email: loggedInEmail,
           data: {
             ...tripPlan,
-            passengers: totalPassengers,
-            totalCost: totalCost,
+            passengers: currentPassengers
           },
-        };
+        },
+      });
 
-        const { data, error } = await supabase.functions.invoke("send-trip-email", {
-          body: requestBody,
-        });
-
-        if (error) throw error;
+      if (error) {
+        throw error;
       }
 
       toast({
         title: "Email sent!",
-        description: `Itinerary sent to ${loggedInEmail}.`,
+        description: "Check your inbox for your trip itinerary.",
       });
     } catch (error) {
       console.error("Failed to send email:", error);
@@ -183,13 +165,20 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
 
   const getItemIcon = (type: string) => {
     switch (type) {
-      case "flight": return Plane;
-      case "transport": return Car;
-      case "hotel": return Building2;
-      case "meal": return Utensils;
-      case "attraction": return Camera;
-      case "rest": return Coffee;
-      default: return MapPin;
+      case "flight":
+        return Plane;
+      case "transport":
+        return Car;
+      case "hotel":
+        return Building2;
+      case "meal":
+        return Utensils;
+      case "attraction":
+        return Camera;
+      case "rest":
+        return Coffee;
+      default:
+        return MapPin;
     }
   };
 
@@ -202,10 +191,21 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
             Your Itinerary
           </h2>
           <p className="text-muted-foreground mt-1">
-            {tripDetails?.departureCity} → {tripDetails?.destinationCity} ({totalPassengers} passengers)
+            {tripDetails.departureCity} → {tripDetails.destinationCity}
           </p>
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
+            <Button
+              variant={emailFormat === "html" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setEmailFormat("html")}
+              className="text-xs h-8"
+            >
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Formatted HTML
+            </Button>
+          </div>
           <Button 
             onClick={sendEmail} 
             disabled={isSendingEmail}
@@ -256,7 +256,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
             <FlightCard
               flight={tripPlan.outboundFlight}
               label="Outbound"
-              passengers={totalPassengers}
+              passengers={(tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0)}
               onToggle={() => onToggleItem("outboundFlight", tripPlan.outboundFlight!.id)}
               formatCurrency={formatCurrency}
             />
@@ -265,7 +265,7 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
             <FlightCard
               flight={tripPlan.returnFlight}
               label="Return"
-              passengers={totalPassengers}
+              passengers={(tripDetails.passengers.adults || 0) + (tripDetails.passengers.children || 0)}
               onToggle={() => onToggleItem("returnFlight", tripPlan.returnFlight!.id)}
               formatCurrency={formatCurrency}
             />
@@ -400,100 +400,106 @@ export function TripResults({ tripDetails, tripPlan, onToggleItem, onReset, trip
       )}
 
       {/* Itinerary Section */}
-      {tripPlan.itinerary && tripPlan.itinerary.length > 0 ? (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-display text-xl font-medium flex items-center gap-2">
-              <Clock className="h-5 w-5 text-accent" />
-              Daily Itinerary
-            </h3>
-            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-              {tripPlan.itinerary.map((day, idx) => (
-                <Button
-                  key={day.day}
-                  variant={activeDay === idx ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setActiveDay(idx)}
-                  className={cn(
-                    "whitespace-nowrap",
-                    activeDay === idx && "bg-accent/10 text-accent hover:bg-accent/20"
-                  )}
-                >
-                  Day {day.day}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {(tripPlan.itinerary[activeDay]?.items || []).map((item, idx) => (
-              <Card
-                key={idx}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-xl font-medium flex items-center gap-2">
+            <Clock className="h-5 w-5 text-accent" />
+            Daily Itinerary
+          </h3>
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            {tripPlan.itinerary.map((day, idx) => (
+              <Button
+                key={day.day}
+                variant={activeDay === idx ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setActiveDay(idx)}
                 className={cn(
-                  "transition-all duration-300 border-l-4",
-                  item.included ? "border-l-accent" : "border-l-muted opacity-60"
+                  "whitespace-nowrap",
+                  activeDay === idx && "bg-accent/10 text-accent hover:bg-accent/20"
                 )}
               >
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div className="flex gap-3 sm:gap-4">
-                      <div className="shrink-0 mt-1 p-2 bg-muted rounded-lg">
-                        {(() => {
-                          const Icon = getItemIcon(item.type);
-                          return <Icon className="h-5 w-5 text-muted-foreground" />;
-                        })()}
-                      </div>
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-medium text-accent">{item.time}</span>
-                          <h4 className="font-medium">{item.title}</h4>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {item.description}
-                        </p>
-                        <GoogleMapsLink 
-                          query={`${item.title} ${tripDetails?.destinationCity}`} 
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                    {/* Mobile: horizontal divider + row layout; Desktop: column layout */}
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/50">
-                      {item.cost ? (
-                        <p className="font-medium">{formatCurrency(item.cost)}</p>
-                      ) : (
-                        <span className="sm:hidden" />
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 h-8 w-8 rounded-full hover:bg-muted"
-                        onClick={() => onToggleItem("itinerary", `${activeDay}-${idx}`)}
-                      >
-                        {item.included ? (
-                          <Check className="h-4 w-4 text-accent" />
-                        ) : (
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                Day {day.day}
+              </Button>
             ))}
           </div>
         </div>
-      ) : (
-        <Card className="bg-muted/30 border-dashed">
-          <CardContent className="p-8 text-center">
-            <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-display text-lg font-medium mb-2">This trip is a preview</h3>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Upgrade to see the full daily itinerary with activities, attractions, and cost breakdowns.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+
+        <div className="space-y-4">
+          {tripPlan.itinerary[activeDay].items.map((item, idx) => (
+            <Card
+              key={idx}
+              className={cn(
+                "transition-all duration-300 border-l-4",
+                item.included ? "border-l-accent" : "border-l-muted opacity-60"
+              )}
+            >
+              <CardContent className="p-4">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                  <div className="flex gap-4 w-full">
+                    <div className="mt-1 p-2 bg-muted rounded-lg shrink-0">
+                      {(() => {
+                        const Icon = getItemIcon(item.type);
+                        return <Icon className="h-5 w-5 text-muted-foreground" />;
+                      })()}
+                    </div>
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-accent">{item.time}</span>
+                        <h4 className="font-medium">{item.title}</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {item.description}
+                      </p>
+                      {item.imageUrl && (
+                        <div className="mt-3 rounded-lg overflow-hidden border border-muted aspect-video max-w-md">
+                          <img 
+                            src={item.imageUrl} 
+                            alt={item.title} 
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          />
+                        </div>
+                      )}
+                      <div className="flex flex-wrap items-center gap-3 mt-3">
+                        <GoogleMapsLink 
+                          query={`${item.title} ${tripDetails.destinationCity}`} 
+                        />
+                        {item.bookingUrl && (
+                          <a
+                            href={item.bookingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Book Tickets
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-muted/50">
+                    {item.cost && (
+                      <p className="font-medium">{formatCurrency(item.cost)}</p>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full hover:bg-muted"
+                      onClick={() => onToggleItem("itinerary", `${activeDay}-${idx}`)}
+                    >
+                      {item.included ? (
+                        <Check className="h-4 w-4 text-accent" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
