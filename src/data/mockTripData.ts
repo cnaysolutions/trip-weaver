@@ -23,38 +23,149 @@ async function fetchPlacePhoto(placeName: string, city: string): Promise<string 
 
 // Get attractions with real photos
 async function getAttractions(city: string) {
-  const attractionsByCity: Record<string, Array<{name: string, description: string, distance: string, cost: number, bookingUrl: string}>> = {
-    "London": [
-      { name: "London Eye", description: "Iconic observation wheel with panoramic city views", distance: "2.5 km", cost: 35, bookingUrl: "https://www.getyourguide.com/london-l57/london-eye-t61789/" },
-      { name: "Tower of London", description: "Historic castle and former royal residence", distance: "4.2 km", cost: 32, bookingUrl: "https://www.getyourguide.com/london-l57/tower-of-london-t61788/" },
-      { name: "British Museum", description: "World-famous museum with extensive collections", distance: "3.8 km", cost: 0, bookingUrl: "https://www.getyourguide.com/london-l57/british-museum-t194318/" },
+  const attractionsByCity: Record<
+    string,
+    Array<{ name: string; description: string; distance: string; cost: number; bookingUrl: string }>
+  > = {
+    London: [
+      {
+        name: "London Eye",
+        description: "Iconic observation wheel with panoramic city views",
+        distance: "2.5 km",
+        cost: 35,
+        bookingUrl: "https://www.getyourguide.com/london-l57/london-eye-t61789/",
+      },
+      {
+        name: "Tower of London",
+        description: "Historic castle and former royal residence",
+        distance: "4.2 km",
+        cost: 32,
+        bookingUrl: "https://www.getyourguide.com/london-l57/tower-of-london-t61788/",
+      },
+      {
+        name: "British Museum",
+        description: "World-famous museum with extensive collections",
+        distance: "3.8 km",
+        cost: 0,
+        bookingUrl: "https://www.getyourguide.com/london-l57/british-museum-t194318/",
+      },
     ],
-    "Paris": [
-      { name: "Eiffel Tower", description: "Iconic iron lattice tower and symbol of Paris", distance: "3.2 km", cost: 28, bookingUrl: "https://www.getyourguide.com/paris-l16/eiffel-tower-t5021/" },
-      { name: "Louvre Museum", description: "World's largest art museum", distance: "2.8 km", cost: 22, bookingUrl: "https://www.getyourguide.com/paris-l16/louvre-museum-t5022/" },
-      { name: "Notre-Dame Cathedral", description: "Medieval Catholic cathedral", distance: "1.5 km", cost: 0, bookingUrl: "https://www.getyourguide.com/paris-l16/notre-dame-cathedral-t194319/" },
+    Paris: [
+      {
+        name: "Eiffel Tower",
+        description: "Iconic iron lattice tower and symbol of Paris",
+        distance: "3.2 km",
+        cost: 28,
+        bookingUrl: "https://www.getyourguide.com/paris-l16/eiffel-tower-t5021/",
+      },
+      {
+        name: "Louvre Museum",
+        description: "World's largest art museum",
+        distance: "2.8 km",
+        cost: 22,
+        bookingUrl: "https://www.getyourguide.com/paris-l16/louvre-museum-t5022/",
+      },
+      {
+        name: "Notre-Dame Cathedral",
+        description: "Medieval Catholic cathedral",
+        distance: "1.5 km",
+        cost: 0,
+        bookingUrl: "https://www.getyourguide.com/paris-l16/notre-dame-cathedral-t194319/",
+      },
     ],
-    "Rome": [
-      { name: "Colosseum", description: "Ancient amphitheater and iconic Roman landmark", distance: "3.5 km", cost: 18, bookingUrl: "https://www.getyourguide.com/rome-l33/colosseum-t5023/" },
-      { name: "Vatican Museums", description: "World-renowned art and historical collections", distance: "5.2 km", cost: 20, bookingUrl: "https://www.getyourguide.com/rome-l33/vatican-museums-t5024/" },
-      { name: "Trevi Fountain", description: "Baroque fountain and popular tourist attraction", distance: "2.1 km", cost: 0, bookingUrl: "https://www.getyourguide.com/rome-l33/trevi-fountain-t194320/" },
+    Rome: [
+      {
+        name: "Colosseum",
+        description: "Ancient amphitheater and iconic Roman landmark",
+        distance: "3.5 km",
+        cost: 18,
+        bookingUrl: "https://www.getyourguide.com/rome-l33/colosseum-t5023/",
+      },
+      {
+        name: "Vatican Museums",
+        description: "World-renowned art and historical collections",
+        distance: "5.2 km",
+        cost: 20,
+        bookingUrl: "https://www.getyourguide.com/rome-l33/vatican-museums-t5024/",
+      },
+      {
+        name: "Trevi Fountain",
+        description: "Baroque fountain and popular tourist attraction",
+        distance: "2.1 km",
+        cost: 0,
+        bookingUrl: "https://www.getyourguide.com/rome-l33/trevi-fountain-t194320/",
+      },
     ],
-    "Barcelona": [
-      { name: "Sagrada Familia", description: "Gaudí's masterpiece basilica", distance: "3.8 km", cost: 26, bookingUrl: "https://www.getyourguide.com/barcelona-l45/sagrada-familia-t5025/" },
-      { name: "Park Güell", description: "Colorful park designed by Antoni Gaudí", distance: "4.5 km", cost: 10, bookingUrl: "https://www.getyourguide.com/barcelona-l45/park-guell-t5026/" },
-      { name: "La Rambla", description: "Famous tree-lined pedestrian street", distance: "1.2 km", cost: 0, bookingUrl: "https://www.getyourguide.com/barcelona-l45/la-rambla-t194321/" },
+    Barcelona: [
+      {
+        name: "Sagrada Familia",
+        description: "Gaudí's masterpiece basilica",
+        distance: "3.8 km",
+        cost: 26,
+        bookingUrl: "https://www.getyourguide.com/barcelona-l45/sagrada-familia-t5025/",
+      },
+      {
+        name: "Park Güell",
+        description: "Colorful park designed by Antoni Gaudí",
+        distance: "4.5 km",
+        cost: 10,
+        bookingUrl: "https://www.getyourguide.com/barcelona-l45/park-guell-t5026/",
+      },
+      {
+        name: "La Rambla",
+        description: "Famous tree-lined pedestrian street",
+        distance: "1.2 km",
+        cost: 0,
+        bookingUrl: "https://www.getyourguide.com/barcelona-l45/la-rambla-t194321/",
+      },
     ],
-    "Amsterdam": [
-      { name: "Anne Frank House", description: "Historic house and biographical museum", distance: "2.3 km", cost: 14, bookingUrl: "https://www.getyourguide.com/amsterdam-l36/anne-frank-house-t5027/" },
-      { name: "Van Gogh Museum", description: "World's largest collection of Van Gogh's works", distance: "3.1 km", cost: 20, bookingUrl: "https://www.getyourguide.com/amsterdam-l36/van-gogh-museum-t5028/" },
-      { name: "Canal Cruise", description: "Scenic boat tour through Amsterdam's canals", distance: "City center", cost: 18, bookingUrl: "https://www.getyourguide.com/amsterdam-l36/canal-cruise-t194322/" },
+    Amsterdam: [
+      {
+        name: "Anne Frank House",
+        description: "Historic house and biographical museum",
+        distance: "2.3 km",
+        cost: 14,
+        bookingUrl: "https://www.getyourguide.com/amsterdam-l36/anne-frank-house-t5027/",
+      },
+      {
+        name: "Van Gogh Museum",
+        description: "World's largest collection of Van Gogh's works",
+        distance: "3.1 km",
+        cost: 20,
+        bookingUrl: "https://www.getyourguide.com/amsterdam-l36/van-gogh-museum-t5028/",
+      },
+      {
+        name: "Canal Cruise",
+        description: "Scenic boat tour through Amsterdam's canals",
+        distance: "City center",
+        cost: 18,
+        bookingUrl: "https://www.getyourguide.com/amsterdam-l36/canal-cruise-t194322/",
+      },
     ],
   };
 
   const defaultAttractions = [
-    { name: `${city} City Center`, description: "Explore the heart of the city", distance: "1.2 km", cost: 0, bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " city tour")}` },
-    { name: `${city} Historic Quarter`, description: "Walk through historic streets", distance: "2.5 km", cost: 15, bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " historic tour")}` },
-    { name: `${city} Cultural Museum`, description: "Discover local art and history", distance: "3.1 km", cost: 18, bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " museum")}` },
+    {
+      name: `${city} City Center`,
+      description: "Explore the heart of the city",
+      distance: "1.2 km",
+      cost: 0,
+      bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " city tour")}`,
+    },
+    {
+      name: `${city} Historic Quarter`,
+      description: "Walk through historic streets",
+      distance: "2.5 km",
+      cost: 15,
+      bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " historic tour")}`,
+    },
+    {
+      name: `${city} Cultural Museum`,
+      description: "Discover local art and history",
+      distance: "3.1 km",
+      cost: 18,
+      bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " museum")}`,
+    },
   ];
 
   const attractions = attractionsByCity[city] || defaultAttractions;
@@ -65,9 +176,10 @@ async function getAttractions(city: string) {
       const photoUrl = await fetchPlacePhoto(attraction.name, city);
       return {
         ...attraction,
-        imageUrl: photoUrl || `https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80`,
+        imageUrl:
+          photoUrl || `https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80`,
       };
-    })
+    }),
   );
 
   return attractionsWithPhotos;
@@ -81,11 +193,7 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
   const originCode = getAirportCode(details.departureCity);
   const destCode = getAirportCode(details.destinationCity);
 
-  const baseFlightPrice = details.flightClass === "first" 
-    ? 1200 
-    : details.flightClass === "business" 
-      ? 650 
-      : 320;
+  const baseFlightPrice = details.flightClass === "first" ? 1200 : details.flightClass === "business" ? 650 : 320;
 
   return {
     outboundFlight: {
@@ -174,7 +282,7 @@ function getAirportCode(city: string): string {
     athens: "ATH",
     zurich: "ZRH",
   };
-  
+
   const normalized = city.toLowerCase().trim();
   return codes[normalized] || city.substring(0, 3).toUpperCase();
 }
@@ -196,7 +304,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "flight" as const,
         included: true,
         imageUrl: "https://images.unsplash.com/photo-1556388158-158ea5b6d841?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport" )
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport"),
       },
       {
         id: "d1-2",
@@ -207,7 +315,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         distance: "Airport terminal",
         included: details.includeCarRental,
         imageUrl: "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental" )
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental"),
       },
       {
         id: "d1-3",
@@ -218,18 +326,22 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         distance: "18 km from airport",
         included: details.includeHotel,
         imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel" )
+        bookingUrl:
+          "https://www.getyourguide.com/s/?q=" +
+          encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel"),
       },
       {
         id: "d1-4",
         time: "16:00",
         title: "Light Exploration",
-        description: "Take a leisurely walk around your hotel neighborhood. Discover local cafes and get your bearings.",
+        description:
+          "Take a leisurely walk around your hotel neighborhood. Discover local cafes and get your bearings.",
         type: "attraction" as const,
         distance: "Walking distance",
         included: true,
         imageUrl: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " walking tour" )
+        bookingUrl:
+          "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " walking tour"),
       },
       {
         id: "d1-5",
@@ -240,7 +352,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         cost: 75,
         included: true,
         imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants" )
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants"),
       },
     ],
   });
@@ -249,7 +361,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
   for (let day = 2; day < tripDays; day++) {
     const dayDate = addDays(departureDate, day - 1);
     const attractions = await getAttractions(details.destinationCity);
-    
+
     itineraries.push({
       day,
       date: format(dayDate, "yyyy-MM-dd"),
@@ -262,7 +374,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
           type: "meal" as const,
           included: true,
           imageUrl: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
-          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast" )
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast"),
         },
         {
           id: `d${day}-2`,
@@ -274,7 +386,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
           cost: attractions[0].cost,
           included: true,
           imageUrl: attractions[0].imageUrl,
-          bookingUrl: attractions[0].bookingUrl
+          bookingUrl: attractions[0].bookingUrl,
         },
         {
           id: `d${day}-3`,
@@ -285,7 +397,8 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
           cost: 40,
           included: true,
           imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
-          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants" )
+          bookingUrl:
+            "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " restaurants"),
         },
         {
           id: `d${day}-4`,
@@ -297,7 +410,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
           cost: attractions[1].cost,
           included: true,
           imageUrl: attractions[1].imageUrl,
-          bookingUrl: attractions[1].bookingUrl
+          bookingUrl: attractions[1].bookingUrl,
         },
         {
           id: `d${day}-5`,
@@ -309,7 +422,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
           cost: attractions[2].cost,
           included: true,
           imageUrl: attractions[2].imageUrl,
-          bookingUrl: attractions[2].bookingUrl
+          bookingUrl: attractions[2].bookingUrl,
         },
         {
           id: `d${day}-6`,
@@ -319,7 +432,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
           type: "rest" as const,
           included: true,
           imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
-          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " hotel" )
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " hotel"),
         },
         {
           id: `d${day}-7`,
@@ -330,7 +443,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
           cost: 85,
           included: true,
           imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
-          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " dining" )
+          bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " dining"),
         },
       ],
     });
@@ -350,7 +463,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "meal" as const,
         included: true,
         imageUrl: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast" )
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " breakfast"),
       },
       {
         id: `d${tripDays}-2`,
@@ -360,7 +473,9 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "hotel" as const,
         included: details.includeHotel,
         imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel" )
+        bookingUrl:
+          "https://www.getyourguide.com/s/?q=" +
+          encodeURIComponent("Grand " + details.destinationCity + " Palace Hotel"),
       },
       {
         id: `d${tripDays}-3`,
@@ -370,7 +485,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "transport" as const,
         included: details.includeCarRental,
         imageUrl: "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental" )
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " car rental"),
       },
       {
         id: `d${tripDays}-4`,
@@ -380,7 +495,7 @@ async function generateDayItineraries(details: TripDetails, tripDays: number) {
         type: "flight" as const,
         included: true,
         imageUrl: "https://images.unsplash.com/photo-1556388158-158ea5b6d841?auto=format&fit=crop&w=800&q=80",
-        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport" )
+        bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(details.destinationCity + " airport"),
       },
     ],
   });
