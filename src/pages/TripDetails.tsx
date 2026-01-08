@@ -115,9 +115,8 @@ export default function TripDetailsPage() {
     try {
       const { data: result, error } = await supabase.functions.invoke("send-trip-email", {
         body: {
+          tripId: tripRecord.id,
           email: user.email,
-          trip: tripRecord,
-          tripItems: tripItems,
         },
       });
 
@@ -247,7 +246,8 @@ export default function TripDetailsPage() {
         {data && (
           <TripResults 
             tripPlan={data.plan} 
-            tripDetails={data.details} 
+            tripDetails={data.details}
+            tripId={id}
             onToggleItem={() => {}} 
             onReset={() => navigate("/trips")}
           />

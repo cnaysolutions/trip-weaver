@@ -38,6 +38,7 @@ function setCanonical(url: string) {
 export default function TripIntake() {
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
+  const [tripId, setTripId] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const { theme, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
@@ -80,6 +81,9 @@ export default function TripIntake() {
           .single();
 
         if (tripError) throw tripError;
+
+        // Store the trip ID for email functionality
+        setTripId(tripData.id);
 
         // Save itinerary items
         if (tripData && plan.itinerary) {
@@ -165,6 +169,7 @@ export default function TripIntake() {
   const handleReset = () => {
     setTripDetails(null);
     setTripPlan(null);
+    setTripId(undefined);
     setPlanningMode();
   };
 
@@ -190,6 +195,7 @@ export default function TripIntake() {
               <TripResults
                 tripDetails={tripDetails}
                 tripPlan={tripPlan}
+                tripId={tripId}
                 onToggleItem={handleToggleItem}
                 onReset={handleReset}
               />

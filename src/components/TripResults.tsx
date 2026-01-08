@@ -48,6 +48,7 @@ const GoogleMapsLink = ({ query }: { query: string } ) => (
 interface TripResultsProps {
   tripDetails: TripDetails;
   tripPlan: TripPlan;
+  tripId?: string;
   onToggleItem: (type: string, id: string) => void;
   onReset: () => void;
 }
@@ -55,6 +56,7 @@ interface TripResultsProps {
 export function TripResults({
   tripDetails,
   tripPlan,
+  tripId,
   onToggleItem,
   onReset,
 }: TripResultsProps) {
@@ -96,6 +98,15 @@ export function TripResults({
       return;
     }
 
+    if (!tripId) {
+      toast({
+        title: "Trip not saved",
+        description: "This trip hasn't been saved yet. Please save your trip first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSendingEmail(true);
     try {
       const loggedInEmail = user.email;
@@ -105,21 +116,8 @@ export function TripResults({
 
       const { data, error } = await supabase.functions.invoke("send-trip-email", {
         body: {
+          tripId: tripId,
           email: loggedInEmail,
-          trip: {
-            origin_city: tripDetails.departureCity,
-            destination_city: tripDetails.destinationCity,
-            departure_date: tripDetails.departureDate?.toISOString() || new Date().toISOString(),
-            return_date: tripDetails.returnDate?.toISOString() || new Date().toISOString(),
-            adults: tripDetails.passengers.adults,
-            children: tripDetails.passengers.children,
-            infants: tripDetails.passengers.infants,
-            flight_class: tripDetails.flightClass,
-            include_car: tripDetails.includeCarRental,
-            include_hotel: tripDetails.includeHotel,
-            is_paid: tripDetails.is_paid || false, // Pass is_paid status
-          },
-          tripPlan: tripPlan,
         },
       });
 
