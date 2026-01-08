@@ -90,10 +90,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error fetching place photo:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ 
         error: "Failed to fetch place photo",
-        details: error.message 
+        details: message 
       }),
       {
         status: 500,
