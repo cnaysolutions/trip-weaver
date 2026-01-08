@@ -51,8 +51,9 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("Edge Function Error:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
     return jsonResponse(
-      { error: err.message },
+      { error: message },
       500
     );
   }
