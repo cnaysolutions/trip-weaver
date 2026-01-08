@@ -1,7 +1,79 @@
 import type { TripPlan, TripDetails } from "@/types/trip";
 import { addDays, format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
-export function generateMockTripPlan(details: TripDetails): TripPlan {
+// Helper function to fetch real photos from Google Places API
+async function fetchPlacePhoto(placeName: string, city: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("get-place-photo", {
+      body: { placeName, city },
+    });
+
+    if (error) {
+      console.error(`Error fetching photo for ${placeName}:`, error);
+      return null;
+    }
+
+    return data?.photoUrl || null;
+  } catch (error) {
+    console.error(`Failed to fetch photo for ${placeName}:`, error);
+    return null;
+  }
+}
+
+// Get attractions with real photos
+async function getAttractions(city: string) {
+  const attractionsByCity: Record<string, Array<{name: string, description: string, distance: string, cost: number, bookingUrl: string}>> = {
+    "London": [
+      { name: "London Eye", description: "Iconic observation wheel with panoramic city views", distance: "2.5 km", cost: 35, bookingUrl: "https://www.getyourguide.com/london-l57/london-eye-t61789/" },
+      { name: "Tower of London", description: "Historic castle and former royal residence", distance: "4.2 km", cost: 32, bookingUrl: "https://www.getyourguide.com/london-l57/tower-of-london-t61788/" },
+      { name: "British Museum", description: "World-famous museum with extensive collections", distance: "3.8 km", cost: 0, bookingUrl: "https://www.getyourguide.com/london-l57/british-museum-t194318/" },
+    ],
+    "Paris": [
+      { name: "Eiffel Tower", description: "Iconic iron lattice tower and symbol of Paris", distance: "3.2 km", cost: 28, bookingUrl: "https://www.getyourguide.com/paris-l16/eiffel-tower-t5021/" },
+      { name: "Louvre Museum", description: "World's largest art museum", distance: "2.8 km", cost: 22, bookingUrl: "https://www.getyourguide.com/paris-l16/louvre-museum-t5022/" },
+      { name: "Notre-Dame Cathedral", description: "Medieval Catholic cathedral", distance: "1.5 km", cost: 0, bookingUrl: "https://www.getyourguide.com/paris-l16/notre-dame-cathedral-t194319/" },
+    ],
+    "Rome": [
+      { name: "Colosseum", description: "Ancient amphitheater and iconic Roman landmark", distance: "3.5 km", cost: 18, bookingUrl: "https://www.getyourguide.com/rome-l33/colosseum-t5023/" },
+      { name: "Vatican Museums", description: "World-renowned art and historical collections", distance: "5.2 km", cost: 20, bookingUrl: "https://www.getyourguide.com/rome-l33/vatican-museums-t5024/" },
+      { name: "Trevi Fountain", description: "Baroque fountain and popular tourist attraction", distance: "2.1 km", cost: 0, bookingUrl: "https://www.getyourguide.com/rome-l33/trevi-fountain-t194320/" },
+    ],
+    "Barcelona": [
+      { name: "Sagrada Familia", description: "Gaudí's masterpiece basilica", distance: "3.8 km", cost: 26, bookingUrl: "https://www.getyourguide.com/barcelona-l45/sagrada-familia-t5025/" },
+      { name: "Park Güell", description: "Colorful park designed by Antoni Gaudí", distance: "4.5 km", cost: 10, bookingUrl: "https://www.getyourguide.com/barcelona-l45/park-guell-t5026/" },
+      { name: "La Rambla", description: "Famous tree-lined pedestrian street", distance: "1.2 km", cost: 0, bookingUrl: "https://www.getyourguide.com/barcelona-l45/la-rambla-t194321/" },
+    ],
+    "Amsterdam": [
+      { name: "Anne Frank House", description: "Historic house and biographical museum", distance: "2.3 km", cost: 14, bookingUrl: "https://www.getyourguide.com/amsterdam-l36/anne-frank-house-t5027/" },
+      { name: "Van Gogh Museum", description: "World's largest collection of Van Gogh's works", distance: "3.1 km", cost: 20, bookingUrl: "https://www.getyourguide.com/amsterdam-l36/van-gogh-museum-t5028/" },
+      { name: "Canal Cruise", description: "Scenic boat tour through Amsterdam's canals", distance: "City center", cost: 18, bookingUrl: "https://www.getyourguide.com/amsterdam-l36/canal-cruise-t194322/" },
+    ],
+  };
+
+  const defaultAttractions = [
+    { name: `${city} City Center`, description: "Explore the heart of the city", distance: "1.2 km", cost: 0, bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " city tour")}` },
+    { name: `${city} Historic Quarter`, description: "Walk through historic streets", distance: "2.5 km", cost: 15, bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " historic tour")}` },
+    { name: `${city} Cultural Museum`, description: "Discover local art and history", distance: "3.1 km", cost: 18, bookingUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(city + " museum")}` },
+  ];
+
+  const attractions = attractionsByCity[city] || defaultAttractions;
+
+  // Fetch real photos for each attraction
+  const attractionsWithPhotos = await Promise.all(
+    attractions.map(async (attraction) => {
+      const photoUrl = await fetchPlacePhoto(attraction.name, city);
+      return {
+        ...attraction,
+        imageUrl: photoUrl || `https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80`,
+      };
+    })
+  );
+
+  return attractionsWithPhotos;
+}
+
+export async function generateMockTripPlan(details: TripDetails): Promise<TripPlan> {
   const departureDate = details.departureDate || new Date();
   const returnDate = details.returnDate || addDays(departureDate, 5);
   const tripDays = Math.ceil((returnDate.getTime() - departureDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -74,7 +146,7 @@ export function generateMockTripPlan(details: TripDetails): TripPlan {
           included: true,
         }
       : null,
-    itinerary: generateDayItineraries(details, tripDays),
+    itinerary: await generateDayItineraries(details, tripDays),
     totalCost: 0,
   };
 }
@@ -107,7 +179,7 @@ function getAirportCode(city: string): string {
   return codes[normalized] || city.substring(0, 3).toUpperCase();
 }
 
-function generateDayItineraries(details: TripDetails, tripDays: number) {
+async function generateDayItineraries(details: TripDetails, tripDays: number) {
   const departureDate = details.departureDate || new Date();
   const itineraries = [];
 
@@ -176,7 +248,7 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
   // Middle days - Exploration
   for (let day = 2; day < tripDays; day++) {
     const dayDate = addDays(departureDate, day - 1);
-    const attractions = getRandomAttractions(details.destinationCity, day);
+    const attractions = await getAttractions(details.destinationCity);
     
     itineraries.push({
       day,
@@ -315,69 +387,3 @@ function generateDayItineraries(details: TripDetails, tripDays: number) {
 
   return itineraries;
 }
-
-function getRandomAttractions(destinationCity: string, day: number): ItineraryItem[] {
-  const attractionsPool = [
-    {
-      name: "Explore Local Market",
-      description: "Immerse yourself in the local culture and find unique souvenirs.",
-      distance: "City center",
-      cost: 0,
-      imageUrl: "https://images.unsplash.com/photo-1534447677768-bfe9d0c8149d?auto=format&fit=crop&w=800&q=80",
-      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " market" )
-    },
-    {
-      name: "Visit a Museum",
-      description: "Discover art, history, or science at a renowned local museum.",
-      distance: "Varies",
-      cost: 25,
-      imageUrl: "https://images.unsplash.com/photo-1532629600-b1473136270a?auto=format&fit=crop&w=800&q=80",
-      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " museum" )
-    },
-    {
-      name: "Relax at a Park",
-      description: "Enjoy a peaceful afternoon in one of the city's beautiful parks.",
-      distance: "Varies",
-      cost: 0,
-      imageUrl: "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=800&q=80",
-      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " park" )
-    },
-    {
-      name: "Take a Cooking Class",
-      description: "Learn to prepare local delicacies with a hands-on cooking experience.",
-      distance: "Varies",
-      cost: 90,
-      imageUrl: "https://images.unsplash.com/photo-1590987930104-949479e083f8?auto=format&fit=crop&w=800&q=80",
-      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " cooking class" )
-    },
-    {
-      name: "Go on a Guided Tour",
-      description: "Explore the city's highlights with an expert local guide.",
-      distance: "Varies",
-      cost: 50,
-      imageUrl: "https://images.unsplash.com/photo-1520250403390-346747201f65?auto=format&fit=crop&w=800&q=80",
-      bookingUrl: "https://www.getyourguide.com/s/?q=" + encodeURIComponent(destinationCity + " guided tour" )
-    },
-  ];
-
-  // Simple pseudo-random selection based on day number to ensure variety
-  const selectedAttractions = [
-    attractionsPool[(day * 1) % attractionsPool.length],
-    attractionsPool[(day * 2) % attractionsPool.length],
-    attractionsPool[(day * 3) % attractionsPool.length],
-  ];
-
-  return selectedAttractions.map((attraction, index) => ({
-    id: `d${day}-attraction-${index + 1}`,
-    time: "", // Time will be set by the calling function
-    title: attraction.name,
-    description: attraction.description,
-    type: "attraction" as const,
-    distance: attraction.distance,
-    cost: attraction.cost,
-    included: true,
-    imageUrl: attraction.imageUrl,
-    bookingUrl: attraction.bookingUrl
-  }));
-}
-
