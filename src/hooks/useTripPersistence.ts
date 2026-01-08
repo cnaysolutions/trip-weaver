@@ -129,11 +129,17 @@ function buildTripItems(tripId: string, tripPlan: TripPlan) {
   }
 
   // Add itinerary activities
+  // Map all item types to allowed values: 'flight', 'hotel', 'car', 'activity', 'attraction', 'transport'
+  const allowedTypes = ['flight', 'hotel', 'car', 'activity', 'attraction', 'transport'];
+  
   tripPlan.itinerary.forEach((day) => {
     day.items.forEach((item, idx) => {
+      // Map non-allowed types (meal, rest, etc.) to 'activity'
+      const mappedType = allowedTypes.includes(item.type) ? item.type : 'activity';
+      
       items.push({
         trip_id: tripId,
-        item_type: item.type === "attraction" ? "activity" : item.type,
+        item_type: mappedType,
         name: item.title,
         description: item.description,
         cost: item.cost || 0,
