@@ -23,7 +23,7 @@ function setMetaTag(name: string, content: string) {
 }
 
 function setCanonical(url: string) {
-  const existing = document.querySelector("link[rel=\"canonical\"]") as HTMLLinkElement | null;
+  const existing = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
   if (existing) {
     existing.setAttribute("href", url);
     return;
@@ -44,10 +44,7 @@ export default function TripIntake() {
 
   useEffect(() => {
     document.title = "Plan a Trip | Best Holiday Plan";
-    setMetaTag(
-      "description",
-      "Plan an international trip with calm guidance, real prices, and reversible choices."
-    );
+    setMetaTag("description", "Plan an international trip with calm guidance, real prices, and reversible choices.");
     setCanonical(`${window.location.origin}/trip/new`);
   }, []);
 
@@ -58,8 +55,8 @@ export default function TripIntake() {
     // Simulate API call delay for realistic experience
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const plan = generateMockTripPlan(details);
-    
+    const plan = await generateMockTripPlan(details);
+
     // Save to Supabase if user is logged in
     if (user) {
       try {
@@ -77,7 +74,7 @@ export default function TripIntake() {
             flight_class: details.flightClass,
             include_car: details.includeCarRental,
             include_hotel: details.includeHotel,
-            status: "planning"
+            status: "planning",
           })
           .select()
           .single();
@@ -86,8 +83,8 @@ export default function TripIntake() {
 
         // Save itinerary items
         if (tripData && plan.itinerary) {
-          const allItems = plan.itinerary.flatMap(day => 
-            day.items.map(item => ({
+          const allItems = plan.itinerary.flatMap((day) =>
+            day.items.map((item) => ({
               trip_id: tripData.id,
               day_number: day.day,
               name: item.title,
@@ -99,12 +96,10 @@ export default function TripIntake() {
               image_url: item.imageUrl,
               booking_url: item.bookingUrl,
               provider_data: item.provider_data,
-            }))
+            })),
           );
 
-          const { error: itemsError } = await supabase
-            .from("trip_items")
-            .insert(allItems);
+          const { error: itemsError } = await supabase.from("trip_items").insert(allItems);
 
           if (itemsError) throw itemsError;
         }
@@ -115,7 +110,7 @@ export default function TripIntake() {
 
     setTripPlan(plan);
     setIsLoading(false);
-    
+
     // Switch to results mode
     setResultsMode();
 
