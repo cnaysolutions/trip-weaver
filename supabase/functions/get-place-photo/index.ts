@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const GOOGLE_MAPS_PROXY_URL = "https://maps-api.manus.computer";
 
-serve(async (req ) => {
+serve(async (req) => {
   // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
