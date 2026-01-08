@@ -90,12 +90,10 @@ export default function TripIntake() {
               name: item.title,
               description: item.description,
               item_type: item.type,
-              time: item.time,
               cost: item.cost || 0,
               included: item.included,
               image_url: item.imageUrl,
               booking_url: item.bookingUrl,
-              provider_data: item.provider_data,
             })),
           );
 
