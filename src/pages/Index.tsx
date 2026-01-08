@@ -4,7 +4,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { TripIntakeForm } from "@/components/TripIntakeForm";
 import { TripResults } from "@/components/TripResults";
 import { Footer } from "@/components/Footer";
-import { ContactForm } from "@/components/ContactForm";
+import { ContactSection } from "@/components/ContactSection";
 import { generateMockTripPlan } from "@/data/mockTripData";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,67 +25,7 @@ const Index = () => {
     // Simulate API call delay for realistic experience
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const plan = generateMockTripPlan(details);
-    
-    // Save to Supabase if user is logged in
-    if (user) {
-      try {
-        const { data: tripData, error: tripError } = await supabase
-          .from("trips")
-          .insert({
-            user_id: user.id,
-            origin_city: details.departureCity,
-            destination_city: details.destinationCity,
-            departure_date: details.departureDate?.toISOString() || new Date().toISOString(),
-            return_date: details.returnDate?.toISOString() || new Date().toISOString(),
-            adults: details.passengers.adults,
-            children: details.passengers.children,
-            infants: details.passengers.infants,
-            flight_class: details.flightClass,
-            include_car: details.includeCarRental,
-            include_hotel: details.includeHotel,
-            status: "planning",
-            is_paid: false, // Explicitly set is_paid to false for newly generated trips
-          })
-          .select()
-          .single();
-
-        if (tripError) throw tripError;
-
-        // Save itinerary items
-        if (tripData && plan.itinerary) {
-          const allItems = plan.itinerary.flatMap(day => 
-            day.items.map((item, index) => ({
-              trip_id: tripData.id,
-              day_number: day.day,
-              order_in_day: index + 1, // Assuming order_in_day is 1-indexed
-              name: item.title,
-              description: item.description,
-              item_type: item.type,
-              start_time: item.time && day.date ? `${day.date}T${item.time}:00Z` : null, // Combine YYYY-MM-DD date and time, assume UTC
-              end_time: null, // No explicit end_time in ItineraryItem
-              cost: item.cost || 0,
-              currency: 'EUR', // Default currency as per DB schema
-              included: item.included,
-              image_url: item.imageUrl || null,
-              booking_url: item.bookingUrl || null,
-              provider_data: {}, // No explicit provider_data in ItineraryItem, use empty object
-              lat: null, // No lat in ItineraryItem
-              lon: null, // No lon in ItineraryItem
-              distance_from: null, // No distance_from in ItineraryItem
-            }))
-          );
-
-          const { error: itemsError } = await supabase
-            .from("trip_items")
-            .insert(allItems);
-
-          if (itemsError) throw itemsError;
-        }
-      } catch (error) {
-        console.error("Error saving trip:", error);
-      }
-    }
+    const plan = await generateMockTripPlan(details);
 
     setTripPlan(plan);
     setIsLoading(false);
@@ -174,11 +114,7 @@ const Index = () => {
             <TripIntakeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
           </main>
 
-          <section id="contact" className="bg-secondary/20 py-20 border-y border-border">
-            <div className="container mx-auto px-4 max-w-2xl">
-              <ContactForm />
-            </div>
-          </section>
+          <ContactSection />
         </>
       ) : (
         <main className="container mx-auto px-4 py-12 max-w-4xl">

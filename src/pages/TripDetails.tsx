@@ -250,8 +250,6 @@ export default function TripDetailsPage() {
             tripDetails={data.details} 
             onToggleItem={() => {}} 
             onReset={() => navigate("/trips")}
-            tripRecord={tripRecord}
-            tripItems={tripItems}
           />
         )}
       </main>
