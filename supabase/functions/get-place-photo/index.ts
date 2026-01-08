@@ -93,12 +93,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[ERROR] Exception caught:", error);
     return new Response(
       JSON.stringify({
         error: "Failed to fetch place photo",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       }),
       {
         status: 500,
