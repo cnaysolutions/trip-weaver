@@ -123,7 +123,6 @@ function formatDate(dateStr: string): string {
 function generateHtmlEmail(trip: TripRecord, tripItems: TripItem[]): string {
   const passengers = trip.adults + trip.children + trip.infants;
   const isPreview = false; // Always show full details - no preview mode
-
   // Organize items by type
   const flights = tripItems.filter((i) => i.item_type === "flight");
   const outboundFlight = flights.find((f) => (f.provider_data as any)?.direction === "outbound");
