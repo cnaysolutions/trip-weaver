@@ -348,14 +348,33 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Authenticate user - required for all requests
+    const authResult = await authenticateUser(req);
+    if (!authResult) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - valid authentication required" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const requestData: TripEmailRequest = await req.json();
     
     console.log("Received email request for trip:", requestData.trip?.id);
     console.log("Trip items count:", requestData.tripItems?.length || 0);
+    console.log("Authenticated user:", authResult.userId);
     
-    if (!requestData.email || !requestData.trip) {
+    if (!requestData.trip) {
       return new Response(
-        JSON.stringify({ error: "Missing email or trip data" }),
+        JSON.stringify({ error: "Missing trip data" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
+    // Security: Always send to the authenticated user's email, ignore any provided email
+    const recipientEmail = authResult.email;
+    if (!recipientEmail) {
+      return new Response(
+        JSON.stringify({ error: "User has no verified email address" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -365,12 +384,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await sendEmailViaResend({
       from: "Best Travel Plan <contacts@best-travel-plan.cloud>",
-      to: [requestData.email],
+      to: [recipientEmail],
       subject,
       html,
     });
 
-    console.log("Email sent successfully:", emailResponse.id);
+    console.log("Email sent successfully to:", recipientEmail, "id:", emailResponse.id);
 
     return new Response(JSON.stringify({ success: true, id: emailResponse.id }), {
       status: 200,
