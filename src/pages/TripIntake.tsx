@@ -86,6 +86,9 @@ export default function TripIntake() {
         setTripId(tripData.id);
 
         // Save itinerary items
+        // Map all item types to allowed values: 'flight', 'hotel', 'car', 'activity', 'attraction', 'transport'
+        const allowedTypes = ['flight', 'hotel', 'car', 'activity', 'attraction', 'transport'];
+        
         if (tripData && plan.itinerary) {
           const allItems = plan.itinerary.flatMap((day) =>
             day.items.map((item) => ({
@@ -93,7 +96,7 @@ export default function TripIntake() {
               day_number: day.day,
               name: item.title,
               description: item.description,
-              item_type: item.type,
+              item_type: allowedTypes.includes(item.type) ? item.type : 'activity',
               cost: item.cost || 0,
               included: item.included,
               image_url: item.imageUrl,
