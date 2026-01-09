@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useCredits } from "@/hooks/useCredits";
 import type { TripDetails, FlightClass } from "@/types/trip";
 import type { Location } from "@/types/location";
 
@@ -24,6 +25,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { credits, deductCredit, redirectToCheckout, isDeducting } = useCredits();
   
   const [departureCity, setDepartureCity] = useState("");
   const [destinationCity, setDestinationCity] = useState("");
@@ -82,6 +84,29 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
         variant: "destructive",
       });
       navigate("/auth");
+      return;
+    }
+
+    // Check if user has credits
+    if (credits !== null && credits <= 0) {
+      toast({
+        title: "No Credits Available",
+        description: "You need credits to plan a trip. Purchase credits to continue.",
+        variant: "destructive",
+      });
+      redirectToCheckout();
+      return;
+    }
+
+    // Try to deduct a credit
+    const creditDeducted = await deductCredit();
+    if (!creditDeducted) {
+      toast({
+        title: "Credit Deduction Failed",
+        description: "Unable to deduct credit. Please purchase more credits.",
+        variant: "destructive",
+      });
+      redirectToCheckout();
       return;
     }
 
@@ -485,12 +510,12 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
           variant="hero"
           size="xl"
           className="w-full"
-          disabled={isLoading || isNormalizing || !isFormValid}
+          disabled={isLoading || isNormalizing || isDeducting || !isFormValid}
         >
-          {isLoading || isNormalizing ? (
+          {isLoading || isNormalizing || isDeducting ? (
             <span className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
-              {isNormalizing ? "Verifying locations..." : "Preparing your itinerary..."}
+              {isDeducting ? "Processing..." : isNormalizing ? "Verifying locations..." : "Preparing your itinerary..."}
             </span>
           ) : (
             <span className="flex items-center gap-2">
@@ -499,7 +524,7 @@ export function TripIntakeForm({ onSubmit, isLoading }: TripIntakeFormProps) {
           )}
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Uses 1 credit per search — We show live prices, nothing is booked
+          Uses 1 credit per search — {credits !== null ? `You have ${credits} credit${credits !== 1 ? 's' : ''}` : 'We show live prices, nothing is booked'}
         </p>
       </div>
     </form>
