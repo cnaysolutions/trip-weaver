@@ -37,6 +37,12 @@ function safeFormatDate(value: unknown, formatStr: string, fallback: string = "D
     return fallback;
   }
 }
+
+// Helper function for safe string display (time, duration, etc.)
+function safeString(value: unknown, fallback: string = "—"): string {
+  if (value === null || value === undefined || value === "") return fallback;
+  return String(value);
+}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -205,7 +211,7 @@ export function TripResults({
                         {tripPlan.outboundFlight.airline} • {tripPlan.outboundFlight.flightNumber}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {tripPlan.outboundFlight.departureTime} - {tripPlan.outboundFlight.arrivalTime} ({(tripPlan.outboundFlight.duration)})
+                        {safeString(tripPlan.outboundFlight.departureTime, "Time not specified")} - {safeString(tripPlan.outboundFlight.arrivalTime, "Time not specified")} ({safeString(tripPlan.outboundFlight.duration, "Duration N/A")})
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -238,7 +244,7 @@ export function TripResults({
                         {tripPlan.returnFlight.airline} • {tripPlan.returnFlight.flightNumber}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {tripPlan.returnFlight.departureTime} - {tripPlan.returnFlight.arrivalTime} ({(tripPlan.returnFlight.duration)})
+                        {safeString(tripPlan.returnFlight.departureTime, "Time not specified")} - {safeString(tripPlan.returnFlight.arrivalTime, "Time not specified")} ({safeString(tripPlan.returnFlight.duration, "Duration N/A")})
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -366,7 +372,7 @@ export function TripResults({
                           <Clock className="h-4 w-4 text-gray-500 mt-1" />
                           <div>
                             <p className="font-medium">{item.title}</p>
-                            <p className="text-sm text-gray-500">{item.time}</p>
+                            <p className="text-sm text-gray-500">{safeString(item.time, "Time not specified")}</p>
                             {item.description && (
                               <p className="text-sm text-gray-500">{item.description}</p>
                             )}
