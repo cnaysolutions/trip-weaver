@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import {
   Plane,
   Car,
@@ -19,6 +19,24 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
+
+// Helper function for safe date parsing
+function safeParseDate(value: unknown): Date | null {
+  if (!value) return null;
+  const date = new Date(value as string);
+  return isValid(date) ? date : null;
+}
+
+// Helper function for safe date formatting
+function safeFormatDate(value: unknown, formatStr: string, fallback: string = "Date not available"): string {
+  const date = safeParseDate(value);
+  if (!date) return fallback;
+  try {
+    return format(date, formatStr);
+  } catch {
+    return fallback;
+  }
+}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -294,10 +312,10 @@ export function TripResults({
                     <p className="font-medium">{tripPlan.carRental.vehicleName}</p>
                     <p className="text-sm text-gray-500">{tripPlan.carRental.company}</p>
                     <p className="text-sm text-gray-500">
-                      Pickup: {format(new Date(tripPlan.carRental.pickupTime), "MMM d, p")}
+                      Pickup: {safeFormatDate(tripPlan.carRental.pickupTime, "MMM d, p")}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Dropoff: {format(new Date(tripPlan.carRental.dropoffTime), "MMM d, p")}
+                      Dropoff: {safeFormatDate(tripPlan.carRental.dropoffTime, "MMM d, p")}
                     </p>
                     <GoogleMapsLink query={`${tripPlan.carRental.pickupLocation} ${tripDetails.destinationCity}`} />
                   </div>
@@ -332,7 +350,7 @@ export function TripResults({
                 <Card key={day.day}>
                   <CardHeader>
                     <CardTitle className="text-base">
-                      Day {day.day}: {format(new Date(day.date), "EEEE, MMM d")}
+                      Day {day.day}{day.date ? `: ${safeFormatDate(day.date, "EEEE, MMM d")}` : ""}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">

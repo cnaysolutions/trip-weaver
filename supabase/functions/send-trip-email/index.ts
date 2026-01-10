@@ -50,15 +50,21 @@ function formatCurrency(amount: number, currency: string = "EUR"): string {
   }).format(amount);
 }
 
-// Format date
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+// Format date safely
+function formatDate(dateString: string | null | undefined, fallback: string = "Date not available"): string {
+  if (!dateString) return fallback;
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return fallback;
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return fallback;
+  }
 }
 
 interface TripEmailRequest {

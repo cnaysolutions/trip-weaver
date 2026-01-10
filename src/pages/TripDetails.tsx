@@ -8,9 +8,27 @@ import { Loader2, ArrowLeft, Sparkles, Plane, Hotel, Car, MapPin, Mail } from "l
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { TripPlan, TripDetails } from "@/types/trip";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+
+// Helper function for safe date parsing
+function safeParseDate(value: unknown): Date | null {
+  if (!value) return null;
+  const date = new Date(value as string);
+  return isValid(date) ? date : null;
+}
+
+// Helper function for safe date formatting
+function safeFormatDate(value: unknown, formatStr: string, fallback: string = "Date not available"): string {
+  const date = safeParseDate(value);
+  if (!date) return fallback;
+  try {
+    return format(date, formatStr);
+  } catch {
+    return fallback;
+  }
+}
 
 export default function TripDetailsPage() {
   const { id } = useParams();
@@ -56,8 +74,8 @@ export default function TripDetailsPage() {
       const details: TripDetails = {
         departureCity: trip.origin_city,
         destinationCity: trip.destination_city,
-        departureDate: new Date(trip.departure_date),
-        returnDate: new Date(trip.return_date),
+        departureDate: safeParseDate(trip.departure_date),
+        returnDate: safeParseDate(trip.return_date),
         passengers: { adults: trip.adults, children: trip.children, infants: trip.infants },
         flightClass: trip.flight_class as any,
         includeCarRental: trip.include_car,
@@ -171,7 +189,7 @@ export default function TripDetailsPage() {
                   {tripRecord.origin_city} → {tripRecord.destination_city}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(tripRecord.departure_date), "MMM d")} – {format(new Date(tripRecord.return_date), "MMM d, yyyy")}
+                  {safeFormatDate(tripRecord.departure_date, "MMM d")} – {safeFormatDate(tripRecord.return_date, "MMM d, yyyy")}
                 </p>
               </div>
 
