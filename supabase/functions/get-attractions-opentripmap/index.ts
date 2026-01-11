@@ -49,21 +49,21 @@ serve(async (req: Request): Promise<Response> => {
     // OpenTripMap API is FREE - no API key required for basic usage!
     // But rate limited, so we use the free tier
     const apiKey = "5ae2e3f221c38a28845f05b6b62cc7de2ddbee1f06a99fdb44e43aca"; // Free demo key
-    
+
     // Fetch places from OpenTripMap
     const placesUrl = `https://api.opentripmap.com/0.1/en/places/radius?radius=${radius}&lon=${lon}&lat=${lat}&kinds=cultural,historic,architecture,museums,natural&rate=2&format=json&limit=${limit}&apikey=${apiKey}`;
-    
+
     console.log(`Calling OpenTripMap API...`);
-    
+
     const response = await fetch(placesUrl);
-    
+
     if (!response.ok) {
       console.error(`OpenTripMap API error: ${response.status} ${response.statusText}`);
       throw new Error(`OpenTripMap API error: ${response.status}`);
     }
 
     const places: OpenTripMapPlace[] = await response.json();
-    
+
     console.log(`OpenTripMap returned ${places.length} places`);
 
     // Filter out places without names and transform to our format
@@ -73,10 +73,10 @@ serve(async (req: Request): Promise<Response> => {
         // Parse the kinds string to get a category
         const kinds = place.kinds?.split(",") || [];
         const category = kinds[0] || "attraction";
-        
+
         // Convert OpenTripMap rate (1-7) to a 1-10 scale
         const rating = place.rate ? Math.min(10, place.rate + 3) : 5;
-        
+
         return {
           id: place.xid,
           name: place.name,
@@ -93,39 +93,37 @@ serve(async (req: Request): Promise<Response> => {
     console.log(`Returning ${attractions.length} valid attractions`);
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         attractions,
         city,
-        count: attractions.length 
+        count: attractions.length,
       }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   } catch (error: any) {
     console.error("Error fetching attractions:", error);
-    
+
     // Return empty array instead of error to prevent frontend crash
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         attractions: [],
         error: error.message,
         city: "",
-        count: 0
+        count: 0,
       }),
       {
         status: 200, // Return 200 with empty data to prevent frontend errors
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   }
 });
 
 function formatCategory(category: string): string {
-  return category
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function getCategoryDescription(category: string): string {
@@ -140,6 +138,6 @@ function getCategoryDescription(category: string): string {
     theatres_and_entertainments: "Enjoy live performances and entertainment.",
     urban_environment: "Experience the vibrant city atmosphere.",
   };
-  
+
   return descriptions[category] || "A must-see destination for visitors.";
 }
