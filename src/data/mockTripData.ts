@@ -95,13 +95,16 @@ const cityCoordinates: Record<string, { lat: number; lon: number }> = {
 };
 
 function getCityCoordinates(city: string): { lat: number; lon: number } | null {
+  // Strip country name if present (e.g., "Barcelona, Spain" -> "Barcelona")
+  const cityName = city.includes(',') ? city.split(',')[0].trim() : city;
+  
   // Try exact match first
-  if (cityCoordinates[city]) {
-    return cityCoordinates[city];
+  if (cityCoordinates[cityName]) {
+    return cityCoordinates[cityName];
   }
 
   // Try case-insensitive match
-  const cityLower = city.toLowerCase();
+  const cityLower = cityName.toLowerCase();
   for (const [key, coords] of Object.entries(cityCoordinates)) {
     if (key.toLowerCase() === cityLower) {
       return coords;
@@ -109,7 +112,7 @@ function getCityCoordinates(city: string): { lat: number; lon: number } | null {
   }
 
   // Default to Paris if not found
-  console.warn(`Coordinates not found for ${city}, using Paris as default`);
+  console.warn(`Coordinates not found for ${cityName}, using Paris as default`);
   return cityCoordinates["Paris"];
 }
 
