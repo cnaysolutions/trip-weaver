@@ -12,8 +12,6 @@ verify_jwt = false
 [functions.create-checkout]
 verify_jwt = false
 
-[functions.google-places]
-verify_jwt = false
 
 [functions.get-place-photo]
 verify_jwt = false
