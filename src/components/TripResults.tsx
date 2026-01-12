@@ -126,14 +126,16 @@ export function TripResults({
       return;
     }
 
-    if (!tripId) {
+    if (!tripId || tripId === 'new') {
       toast({
         title: "Trip not saved",
-        description: "This trip hasn't been saved yet. Please save your trip first.",
+        description: "Please wait for the trip to be saved before sending email.",
         variant: "destructive",
       });
       return;
     }
+    
+    console.log("Sending email for tripId:", tripId);
 
     setIsSendingEmail(true);
     try {
