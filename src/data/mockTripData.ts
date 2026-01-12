@@ -237,7 +237,7 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
       time: "12:30",
       type: "meal",
       cost: 25,
-      included: false,
+      included: true,  // All items included by default
       imageUrl: `https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80`,
     });
 

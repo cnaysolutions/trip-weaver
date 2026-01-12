@@ -83,33 +83,79 @@ export default function TripDetailsPage() {
       };
 
       // Reconstruct TripPlan
+      const flights = items.filter((i: any) => i.item_type === 'flight');
+      const outboundFlightItem = flights.find((i: any) => (i.provider_data as any)?.direction === 'outbound');
+      const returnFlightItem = flights.find((i: any) => (i.provider_data as any)?.direction === 'return');
+      const carItem = items.find((i: any) => i.item_type === 'car');
+      const hotelItem = items.find((i: any) => i.item_type === 'hotel');
+
+      // Build flight objects with included status from DB
+      const outboundFlight = outboundFlightItem ? {
+        ...(outboundFlightItem.provider_data as any),
+        included: outboundFlightItem.included,
+        pricePerPerson: Number(outboundFlightItem.cost) || 0,
+      } : null;
+
+      const returnFlight = returnFlightItem ? {
+        ...(returnFlightItem.provider_data as any),
+        included: returnFlightItem.included,
+        pricePerPerson: Number(returnFlightItem.cost) || 0,
+      } : null;
+
+      const carRental = carItem ? {
+        ...(carItem.provider_data as any),
+        included: carItem.included,
+        totalPrice: Number(carItem.cost) || 0,
+      } : null;
+
+      const hotel = hotelItem ? {
+        ...(hotelItem.provider_data as any),
+        included: hotelItem.included,
+        totalPrice: Number(hotelItem.cost) || 0,
+      } : null;
+
       const plan: TripPlan = {
-        outboundFlight: items.find((i: any) => i.item_type === 'flight' && (i.provider_data as any)?.direction === 'outbound')?.provider_data as any,
-        returnFlight: items.find((i: any) => i.item_type === 'flight' && (i.provider_data as any)?.direction === 'return')?.provider_data as any,
-        carRental: items.find((i: any) => i.item_type === 'car')?.provider_data as any,
-        hotel: items.find((i: any) => i.item_type === 'hotel')?.provider_data as any,
+        outboundFlight,
+        returnFlight,
+        carRental,
+        hotel,
         itinerary: [],
         totalCost: items.filter((i: any) => i.included).reduce((sum: number, i: any) => sum + Number(i.cost || 0), 0)
       };
 
-      // Rebuild the daily itinerary
-      const days: any[] = [];
-      items.filter((i: any) => i.item_type === 'activity').forEach((item: any) => {
+      // Rebuild the daily itinerary from ALL non-flight/car/hotel items
+      const itineraryItems = items.filter((i: any) => 
+        !['flight', 'car', 'hotel'].includes(i.item_type)
+      );
+      
+      const daysMap = new Map<number, any>();
+      itineraryItems.forEach((item: any) => {
         const dayNum = item.day_number || 1;
-        if (!days[dayNum - 1]) days[dayNum - 1] = { day: dayNum, items: [] };
-        days[dayNum - 1].items.push({
+        if (!daysMap.has(dayNum)) {
+          daysMap.set(dayNum, { day: dayNum, date: "", items: [] });
+        }
+        daysMap.get(dayNum).items.push({
           id: item.id,
           title: item.name,
           description: item.description,
           time: (item.provider_data as any)?.time || "09:00",
-          type: "attraction",
-          cost: item.cost,
+          type: (item.provider_data as any)?.originalType || item.item_type || "attraction",
+          cost: Number(item.cost) || 0,
           included: item.included,
           imageUrl: item.image_url,
-          bookingUrl: item.booking_url
+          bookingUrl: item.booking_url,
+          distance: (item.provider_data as any)?.distance,
+          duration: (item.provider_data as any)?.duration,
         });
       });
-      plan.itinerary = days.filter(d => d !== undefined);
+      
+      // Sort by day and then by order_in_day
+      plan.itinerary = Array.from(daysMap.values())
+        .sort((a, b) => a.day - b.day)
+        .map(day => ({
+          ...day,
+          items: day.items.sort((a: any, b: any) => (a.order_in_day || 0) - (b.order_in_day || 0))
+        }));
 
       setData({ plan, details });
       setLoading(false);
