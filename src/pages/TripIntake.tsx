@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { TripIntakeForm } from "@/components/TripIntakeForm";
@@ -7,8 +6,7 @@ import { TripResults } from "@/components/TripResults";
 import { generateMockTripPlan } from "@/data/mockTripData";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
-import { useTripPersistence } from "@/hooks/useTripPersistence";
-import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import type { TripDetails, TripPlan } from "@/types/trip";
 
 function setMetaTag(name: string, content: string) {
@@ -42,12 +40,8 @@ export default function TripIntake() {
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [tripId, setTripId] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
-  
   const { user } = useAuth();
   const { theme, toggleTheme, setResultsMode, setPlanningMode, themeClass, modeClass } = useTheme();
-  const { saveTrip } = useTripPersistence();
-  const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Plan a Trip | Best Holiday Plan";
@@ -66,41 +60,63 @@ export default function TripIntake() {
 
     // Save to Supabase if user is logged in
     if (user) {
-      const { tripId: savedTripId, error, itemsWarning } = await saveTrip(user.id, details, plan);
+      try {
+        const { data: tripData, error: tripError } = await supabase
+          .from("trips")
+          .insert({
+            user_id: user.id,
+            origin_city: details.departureCity,
+            destination_city: details.destinationCity,
+            departure_date: details.departureDate?.toISOString() || new Date().toISOString(),
+            return_date: details.returnDate?.toISOString() || new Date().toISOString(),
+            adults: details.passengers.adults,
+            children: details.passengers.children,
+            infants: details.passengers.infants,
+            flight_class: details.flightClass,
+            include_car: details.includeCarRental,
+            include_hotel: details.includeHotel,
+            status: "planning",
+          })
+          .select()
+          .single();
 
-      if (error) {
-        console.error("Error saving trip:", error);
-        toast({
-          title: "Failed to save trip",
-          description: "Your trip was generated but couldn't be saved. Please try again.",
-          variant: "destructive",
-        });
-        setTripPlan(plan);
-        setIsLoading(false);
-        setResultsMode();
-        return;
-      }
+        if (tripError) throw tripError;
 
-      if (savedTripId) {
-        setTripId(savedTripId);
+        // Store the trip ID for email functionality
+        setTripId(tripData.id);
+
+        // Save itinerary items
+        // Map all item types to allowed values: 'flight', 'hotel', 'car', 'activity', 'attraction', 'transport'
+        const allowedTypes = ['flight', 'hotel', 'car', 'activity', 'attraction', 'transport'];
         
-        if (itemsWarning) {
-          toast({
-            title: "Trip saved with warnings",
-            description: "Some itinerary items couldn't be saved, but your trip is ready.",
-          });
-        }
+        if (tripData && plan.itinerary) {
+          const allItems = plan.itinerary.flatMap((day) =>
+            day.items.map((item) => ({
+              trip_id: tripData.id,
+              day_number: day.day,
+              name: item.title,
+              description: item.description,
+              item_type: allowedTypes.includes(item.type) ? item.type : 'activity',
+              cost: item.cost || 0,
+              included: item.included,
+              image_url: item.imageUrl,
+              booking_url: item.bookingUrl,
+            })),
+          );
 
-        // Navigate to the trip detail page
-        setIsLoading(false);
-        navigate(`/trip/${savedTripId}`);
-        return;
+          const { error: itemsError } = await supabase.from("trip_items").insert(allItems);
+
+          if (itemsError) throw itemsError;
+        }
+      } catch (error) {
+        console.error("Error saving trip:", error);
       }
     }
 
-    // Fallback for non-logged-in users (show results on same page)
     setTripPlan(plan);
     setIsLoading(false);
+
+    // Switch to results mode
     setResultsMode();
 
     // Scroll to results
