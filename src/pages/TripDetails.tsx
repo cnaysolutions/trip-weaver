@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -30,27 +30,58 @@ function safeFormatDate(value: unknown, formatStr: string, fallback: string = "D
   }
 }
 
+// Navigation state interface
+interface NavigationState {
+  tripDetails?: TripDetails;
+  tripPlan?: TripPlan;
+  freshlyGenerated?: boolean;
+}
+
 export default function TripDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
+
+  // Get trip data from navigation state (if freshly generated)
+  const navState = location.state as NavigationState | null;
+  const passedTripDetails = navState?.tripDetails;
+  const passedTripPlan = navState?.tripPlan;
+  const isFreshlyGenerated = navState?.freshlyGenerated;
+
+  const [loading, setLoading] = useState(!isFreshlyGenerated);
   const [tripRecord, setTripRecord] = useState<any>(null);
-  const [tripItems, setTripItems] = useState<any[]>([]);
-  const [data, setData] = useState<{plan: TripPlan, details: TripDetails} | null>(null);
+  const [data, setData] = useState<{ plan: TripPlan; details: TripDetails } | null>(
+    isFreshlyGenerated && passedTripDetails && passedTripPlan
+      ? { plan: passedTripPlan, details: passedTripDetails }
+      : null
+  );
+  const [tripPlan, setTripPlan] = useState<TripPlan | null>(passedTripPlan || null);
   const [isPreview, setIsPreview] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
+    // If we have fresh data from generation, use it (don't load from database)
+    if (isFreshlyGenerated && passedTripDetails && passedTripPlan) {
+      console.log("Using freshly generated trip data with photos!");
+      setTripRecord({ id }); // Set minimal trip record for email functionality
+      setLoading(false);
+      return;
+    }
+
+    // Only load from database if no fresh data was passed
     async function fetchSavedTrip() {
-      if (!id) return;
-      
+      if (!id || id === "new") {
+        setLoading(false);
+        return;
+      }
+
       const { data: trip, error } = await supabase
         .from("trips")
         .select(`*, trip_items(*)`)
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error || !trip) {
         console.error("Error:", error);
@@ -62,8 +93,7 @@ export default function TripDetailsPage() {
 
       // Check if this is a preview trip (no trip_items)
       const items = Array.isArray(trip.trip_items) ? trip.trip_items : [];
-      setTripItems(items);
-      
+
       if (items.length === 0) {
         setIsPreview(true);
         setLoading(false);
@@ -84,39 +114,80 @@ export default function TripDetailsPage() {
 
       // Reconstruct TripPlan
       const plan: TripPlan = {
-        outboundFlight: items.find((i: any) => i.item_type === 'flight' && (i.provider_data as any)?.direction === 'outbound')?.provider_data as any,
-        returnFlight: items.find((i: any) => i.item_type === 'flight' && (i.provider_data as any)?.direction === 'return')?.provider_data as any,
-        carRental: items.find((i: any) => i.item_type === 'car')?.provider_data as any,
-        hotel: items.find((i: any) => i.item_type === 'hotel')?.provider_data as any,
+        outboundFlight: items.find((i: any) => i.item_type === "flight" && (i.provider_data as any)?.direction === "outbound")?.provider_data as any,
+        returnFlight: items.find((i: any) => i.item_type === "flight" && (i.provider_data as any)?.direction === "return")?.provider_data as any,
+        carRental: items.find((i: any) => i.item_type === "car")?.provider_data as any,
+        hotel: items.find((i: any) => i.item_type === "hotel")?.provider_data as any,
         itinerary: [],
-        totalCost: items.filter((i: any) => i.included).reduce((sum: number, i: any) => sum + Number(i.cost || 0), 0)
+        totalCost: items.filter((i: any) => i.included).reduce((sum: number, i: any) => sum + Number(i.cost || 0), 0),
       };
 
       // Rebuild the daily itinerary
       const days: any[] = [];
-      items.filter((i: any) => i.item_type === 'activity').forEach((item: any) => {
-        const dayNum = item.day_number || 1;
-        if (!days[dayNum - 1]) days[dayNum - 1] = { day: dayNum, items: [] };
-        days[dayNum - 1].items.push({
-          id: item.id,
-          title: item.name,
-          description: item.description,
-          time: (item.provider_data as any)?.time || "09:00",
-          type: "attraction",
-          cost: item.cost,
-          included: item.included,
-          imageUrl: item.image_url,
-          bookingUrl: item.booking_url
+      items
+        .filter((i: any) => i.item_type === "activity" || i.item_type === "attraction")
+        .forEach((item: any) => {
+          const dayNum = item.day_number || 1;
+          if (!days[dayNum - 1]) days[dayNum - 1] = { day: dayNum, items: [] };
+          days[dayNum - 1].items.push({
+            id: item.id,
+            title: item.name,
+            description: item.description,
+            time: (item.provider_data as any)?.time || "09:00",
+            type: "attraction",
+            cost: item.cost,
+            included: item.included,
+            imageUrl: item.image_url,
+            bookingUrl: item.booking_url,
+          });
         });
-      });
-      plan.itinerary = days.filter(d => d !== undefined);
+      plan.itinerary = days.filter((d) => d !== undefined);
 
       setData({ plan, details });
+      setTripPlan(plan);
       setLoading(false);
     }
 
     fetchSavedTrip();
-  }, [id, navigate]);
+  }, [id, navigate, isFreshlyGenerated, passedTripDetails, passedTripPlan]);
+
+  // Handle toggle for freshly generated trips
+  const handleToggleItem = (type: string, itemId: string) => {
+    const currentPlan = data?.plan || tripPlan;
+    if (!currentPlan) return;
+
+    const updatePlan = (prev: TripPlan): TripPlan => {
+      if (type === "outboundFlight" && prev.outboundFlight) {
+        return { ...prev, outboundFlight: { ...prev.outboundFlight, included: !prev.outboundFlight.included } };
+      }
+      if (type === "returnFlight" && prev.returnFlight) {
+        return { ...prev, returnFlight: { ...prev.returnFlight, included: !prev.returnFlight.included } };
+      }
+      if (type === "carRental" && prev.carRental) {
+        return { ...prev, carRental: { ...prev.carRental, included: !prev.carRental.included } };
+      }
+      if (type === "hotel" && prev.hotel) {
+        return { ...prev, hotel: { ...prev.hotel, included: !prev.hotel.included } };
+      }
+      if (type === "itinerary") {
+        return {
+          ...prev,
+          itinerary: prev.itinerary.map((day) => ({
+            ...day,
+            items: day.items.map((item) => (item.id === itemId ? { ...item, included: !item.included } : item)),
+          })),
+        };
+      }
+      return prev;
+    };
+
+    if (data) {
+      setData({ ...data, plan: updatePlan(data.plan) });
+    }
+    if (tripPlan) {
+      setTripPlan(updatePlan(tripPlan));
+    }
+  };
 
   const sendEmail = async () => {
     if (!tripRecord || !user?.email) {
@@ -254,6 +325,11 @@ export default function TripDetailsPage() {
     );
   }
 
+  // Get the effective data to display
+  const effectiveData = data;
+  const effectivePlan = effectiveData?.plan || tripPlan;
+  const effectiveDetails = effectiveData?.details;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -261,12 +337,12 @@ export default function TripDetailsPage() {
         <Button variant="ghost" onClick={() => navigate("/trips")} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to My Trips
         </Button>
-        {data && (
-          <TripResults 
-            tripPlan={data.plan} 
-            tripDetails={data.details}
+        {effectiveData && effectivePlan && effectiveDetails && (
+          <TripResults
+            tripPlan={effectivePlan}
+            tripDetails={effectiveDetails}
             tripId={id}
-            onToggleItem={() => {}} 
+            onToggleItem={handleToggleItem}
             onReset={() => navigate("/trips")}
           />
         )}
