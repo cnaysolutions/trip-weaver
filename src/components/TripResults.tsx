@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { format, isValid } from "date-fns";
 import {
   Plane,
@@ -80,10 +81,13 @@ interface TripResultsProps {
 export function TripResults({
   tripDetails,
   tripPlan,
-  tripId,
+  tripId: propTripId,
   onToggleItem,
   onReset,
 }: TripResultsProps) {
+  const { id: paramTripId } = useParams();
+  const tripId = propTripId || paramTripId;
+  
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSendingEmail, setIsSendingEmail] = useState(false);
