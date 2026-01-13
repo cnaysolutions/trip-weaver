@@ -105,6 +105,8 @@ function buildTripItems(tripId: string, tripPlan: TripPlan) {
     day_number: number | null;
     order_in_day: number | null;
     provider_data: Json;
+    image_url: string | null;
+    booking_url: string | null;
   }> = [];
 
   // Add outbound flight
@@ -152,6 +154,8 @@ function buildTripItems(tripId: string, tripPlan: TripPlan) {
           duration: item.duration || null,
           originalType: item.type,
         } as Json,
+        image_url: item.imageUrl || null,
+        booking_url: item.bookingUrl || null,
       });
     });
   });
@@ -188,6 +192,8 @@ function mapFlightToItem(
       class: flight.class,
       direction,
     } as Json,
+    image_url: null,
+    booking_url: null,
   };
 }
 
@@ -211,6 +217,8 @@ function mapCarRentalToItem(tripId: string, car: CarRental) {
       dropoffTime: car.dropoffTime,
       pricePerDay: car.pricePerDay,
     } as Json,
+    image_url: null,
+    booking_url: null,
   };
 }
 
@@ -231,5 +239,7 @@ function mapHotelToItem(tripId: string, hotel: Hotel) {
       pricePerNight: hotel.pricePerNight,
       amenities: hotel.amenities,
     } as Json,
+    image_url: null,
+    booking_url: null,
   };
 }
