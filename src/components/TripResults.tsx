@@ -144,10 +144,32 @@ export function TripResults({
         throw new Error("User email not found.");
       }
 
+      // Fetch trip data from database
+      const { data: tripData, error: tripError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('id', tripId)
+        .single();
+
+      if (tripError) {
+        throw new Error("Failed to fetch trip data: " + tripError.message);
+      }
+
+      // Fetch trip items from database
+      const { data: tripItems, error: itemsError } = await supabase
+        .from('trip_items')
+        .select('*')
+        .eq('trip_id', tripId);
+
+      if (itemsError) {
+        throw new Error("Failed to fetch trip items: " + itemsError.message);
+      }
+
+      // Send full trip data to email function
       const { data, error } = await supabase.functions.invoke("send-trip-email", {
         body: {
-          tripId: tripId,
-          email: loggedInEmail,
+          trip: tripData,
+          tripItems: tripItems || [],
         },
       });
 
