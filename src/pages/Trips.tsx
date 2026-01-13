@@ -26,38 +26,47 @@ interface Trip {
 
 export default function Trips() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchTrips();
+    // Wait for auth to finish loading before fetching
+    if (authLoading) {
+      return;
     }
-  }, [user]);
-
-  const fetchTrips = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('trips')
-        .select('*')
-        .order('updated_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching trips:', error);
-        throw error;
-      }
-      
-      console.log('Fetched trips:', data?.length || 0);
-      setTrips(data || []);
-    } catch (error: any) {
-      console.error('Failed to load trips:', error);
-      toast.error('Unable to load your trips');
-    } finally {
+    
+    if (!user) {
       setLoading(false);
+      return;
     }
-  };
+
+    const fetchTrips = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching trips:', error);
+          throw error;
+        }
+        
+        console.log('Fetched trips for user:', user.id, 'count:', data?.length || 0);
+        setTrips(data || []);
+      } catch (error: any) {
+        console.error('Failed to load trips:', error);
+        toast.error('Unable to load your trips');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrips();
+  }, [user, authLoading]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -97,14 +106,14 @@ export default function Trips() {
           </div>
 
           {/* Loading state */}
-          {loading && (
+          {(loading || authLoading) && (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           )}
 
           {/* Empty state */}
-          {!loading && trips.length === 0 && (
+          {!loading && !authLoading && trips.length === 0 && (
             <Card variant="elevated" className="text-center py-16">
               <CardContent>
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
@@ -125,7 +134,7 @@ export default function Trips() {
           )}
 
           {/* Trips grid */}
-          {!loading && trips.length > 0 && (
+          {!loading && !authLoading && trips.length > 0 && (
             <div className="grid gap-4">
               {trips.map((trip) => (
                 <Link key={trip.id} to={`/trip/${trip.id}`}>
