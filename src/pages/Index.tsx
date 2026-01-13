@@ -122,6 +122,7 @@ const Index = () => {
             <TripResults
               tripDetails={tripDetails}
               tripPlan={tripPlan}
+              tripId={undefined}
               onToggleItem={handleToggleItem}
               onReset={handleReset}
             />
