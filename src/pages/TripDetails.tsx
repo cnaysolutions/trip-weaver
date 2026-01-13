@@ -125,7 +125,7 @@ export default function TripDetailsPage() {
       // Rebuild the daily itinerary
       const days: any[] = [];
       items
-        .filter((i: any) => i.item_type === "activity" || i.item_type === "attraction")
+.filter((i: any) => i.item_type !== "flight" && i.item_type !== "hotel" && i.item_type !== "car")
         .forEach((item: any) => {
           const dayNum = item.day_number || 1;
           if (!days[dayNum - 1]) days[dayNum - 1] = { day: dayNum, items: [] };
