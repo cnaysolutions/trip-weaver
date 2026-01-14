@@ -153,6 +153,52 @@ function getAirportCode(city: string): string {
   return codes[city] || "XXX";
 }
 
+// Helper to get random price within a range
+function getRandomPrice(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Get realistic attraction price based on category
+function getAttractionPrice(category: string, rating: number): number {
+  const categoryLower = (category || "").toLowerCase();
+  
+  // Museums: €15-30
+  if (categoryLower.includes("museum")) {
+    return getRandomPrice(15, 30);
+  }
+  
+  // Historic sites & architecture: €10-25
+  if (categoryLower.includes("historic") || categoryLower.includes("architecture") || categoryLower.includes("monument")) {
+    return getRandomPrice(10, 25);
+  }
+  
+  // Religious sites: often free or €5-15
+  if (categoryLower.includes("religion") || categoryLower.includes("church") || categoryLower.includes("temple")) {
+    return getRandomPrice(0, 15);
+  }
+  
+  // Natural sites: €5-20
+  if (categoryLower.includes("natural") || categoryLower.includes("park") || categoryLower.includes("garden")) {
+    return getRandomPrice(5, 20);
+  }
+  
+  // Entertainment & activities: €20-50
+  if (categoryLower.includes("entertainment") || categoryLower.includes("theatre") || categoryLower.includes("sport")) {
+    return getRandomPrice(20, 50);
+  }
+  
+  // Cultural sites: €10-35
+  if (categoryLower.includes("cultural")) {
+    return getRandomPrice(10, 35);
+  }
+  
+  // Default: base on rating (higher rating = more popular = higher price)
+  if (rating >= 7) return getRandomPrice(20, 45);
+  if (rating >= 5) return getRandomPrice(12, 30);
+  if (rating >= 3) return getRandomPrice(8, 20);
+  return getRandomPrice(0, 15); // Low rated or free attractions
+}
+
 export async function generateMockTripPlan(details: TripDetails): Promise<TripPlan> {
   const departureDate = details.departureDate || new Date();
   const returnDate = details.returnDate || addDays(departureDate, 5);
@@ -215,13 +261,17 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
 
     dayAttractions.forEach((attraction, idx) => {
       const hour = 9 + idx * 3; // 9am, 12pm, 3pm
+      
+      // Generate realistic price based on category
+      const attractionCost = getAttractionPrice(attraction.category, attraction.rating);
+      
       dayItems.push({
         id: `day${day}-attraction${idx}`,
         title: attraction.name,
         description: attraction.description || `Explore this ${attraction.category} in ${details.destinationCity}`,
         time: `${hour.toString().padStart(2, "0")}:00`,
         type: "attraction",
-        cost: attraction.rating > 5 ? 25 : attraction.rating > 3 ? 15 : 0, // Estimate cost based on rating
+        cost: attractionCost,
         included: true,
         imageUrl: attraction.imageUrl,
         distance: idx > 0 ? "2.5 km" : undefined,
@@ -229,15 +279,16 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
       });
     });
 
-    // Add lunch
+    // Add lunch with varied pricing
+    const lunchPrice = getRandomPrice(20, 40);
     dayItems.push({
       id: `day${day}-lunch`,
       title: "Lunch Break",
-      description: `Find a local restaurant. Take time to rest and recharge.`,
+      description: `Enjoy a local restaurant. Take time to rest and recharge.`,
       time: "12:30",
       type: "meal",
-      cost: 25,
-      included: false,
+      cost: lunchPrice,
+      included: true,
       imageUrl: `https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80`,
     });
 
