@@ -130,7 +130,12 @@ function generateHtmlEmail(trip: TripRecord, tripItems: TripItem[]): string {
   const returnFlight = flights.find((f) => (f.provider_data as any)?.direction === "return");
   const carRental = tripItems.find((i) => i.item_type === "car");
   const hotel = tripItems.find((i) => i.item_type === "hotel");
-  const activities = tripItems.filter((i) => i.item_type === "activity");
+  // Include activity, attraction, transport, and meal types in daily itinerary
+  const activities = tripItems.filter((i) => 
+    i.item_type === "activity" || 
+    i.item_type === "attraction" || 
+    i.item_type === "transport"
+  );
 
   // Group activities by day
   const dayMap: Record<number, TripItem[]> = {};
