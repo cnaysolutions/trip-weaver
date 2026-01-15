@@ -50,7 +50,90 @@ async function fetchAttractions(city: string, lat: number, lon: number, limit: n
     return [];
   }
 }
+// Fallback attractions when API fails or returns empty
+function getFallbackAttractions(city: string, count: number) {
+  const fallbackAttractionTypes = [
+    {
+      category: "museum",
+      names: ["City Museum", "National Museum", "Art Gallery", "History Museum", "Modern Art Museum"],
+      descriptions: ["Explore the rich history and culture", "Discover fascinating exhibits", "Admire world-class art collections"],
+      images: [
+        "https://images.unsplash.com/photo-1554907984-15263bfd63bd?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?auto=format&fit=crop&w=800&q=80",
+      ],
+    },
+    {
+      category: "historic_site",
+      names: ["Old Town Square", "Historic District", "City Center", "Heritage Site", "Ancient Quarter"],
+      descriptions: ["Walk through centuries of history", "Experience the city's heritage", "Discover architectural wonders"],
+      images: [
+        "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?auto=format&fit=crop&w=800&q=80",
+      ],
+    },
+    {
+      category: "park",
+      names: ["Central Park", "City Park", "Botanical Garden", "Riverside Park", "Public Garden"],
+      descriptions: ["Relax in beautiful green spaces", "Enjoy nature in the heart of the city", "Perfect spot for a leisurely stroll"],
+      images: [
+        "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
+      ],
+    },
+    {
+      category: "shopping",
+      names: ["Shopping District", "Local Market", "Artisan Quarter", "Fashion Street", "Souvenir Market"],
+      descriptions: ["Browse local shops and boutiques", "Find unique souvenirs and gifts", "Experience local shopping culture"],
+      images: [
+        "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&w=800&q=80",
+      ],
+    },
+    {
+      category: "restaurant",
+      names: ["Local Restaurant", "Traditional Cuisine", "Rooftop Dining", "Waterfront Restaurant", "Gourmet Experience"],
+      descriptions: ["Savor authentic local flavors", "Enjoy a memorable dining experience", "Taste the best of local cuisine"],
+      images: [
+        "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80",
+      ],
+    },
+    {
+      category: "cultural",
+      names: ["Cultural Center", "Theater District", "Music Hall", "Performance Venue", "Arts Quarter"],
+      descriptions: ["Immerse yourself in local culture", "Experience performing arts", "Discover cultural traditions"],
+      images: [
+        "https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+      ],
+    },
+  ];
 
+  const attractions = [];
+  for (let i = 0; i < count; i++ ) {
+    const typeIndex = i % fallbackAttractionTypes.length;
+    const type = fallbackAttractionTypes[typeIndex];
+    const nameIndex = Math.floor(i / fallbackAttractionTypes.length) % type.names.length;
+    const descIndex = i % type.descriptions.length;
+    const imgIndex = i % type.images.length;
+
+    attractions.push({
+      name: `${type.names[nameIndex]} of ${city}`,
+      description: type.descriptions[descIndex],
+      category: type.category,
+      rating: 6 + (i % 3), // Rating between 6-8
+      imageUrl: type.images[imgIndex],
+    });
+  }
+
+  return attractions;
+}
 // City coordinates for OpenTripMap API
 const cityCoordinates: Record<string, { lat: number; lon: number }> = {
   // Europe
