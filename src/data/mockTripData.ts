@@ -232,6 +232,86 @@ function getAttractionPrice(category: string, rating: number): number {
   return getRandomPrice(0, 15); // Low rated or free attractions
 }
 
+// Fallback images by category when Pexels fails
+function getCategoryFallbackImage(category: string, index: number): string {
+  const categoryLower = (category || "").toLowerCase();
+  
+  // Museum images
+  if (categoryLower.includes("museum")) {
+    const museumImages = [
+      "https://images.unsplash.com/photo-1554907984-15263bfd63bd?auto=format&fit=crop&w=800&q=80", // Museum interior
+      "https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?auto=format&fit=crop&w=800&q=80", // Art gallery
+      "https://images.unsplash.com/photo-1564399579883-451a5d44ec08?auto=format&fit=crop&w=800&q=80", // Modern museum
+    ];
+    return museumImages[index % museumImages.length];
+  }
+  
+  // Historic & architecture
+  if (categoryLower.includes("historic") || categoryLower.includes("architecture") || categoryLower.includes("monument")) {
+    const historicImages = [
+      "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?auto=format&fit=crop&w=800&q=80", // Historic building
+      "https://images.unsplash.com/photo-1549144511-f099e773c147?auto=format&fit=crop&w=800&q=80", // Monument
+      "https://images.unsplash.com/photo-1548445929-4f60a497f851?auto=format&fit=crop&w=800&q=80", // Castle
+    ];
+    return historicImages[index % historicImages.length];
+  }
+  
+  // Religious sites
+  if (categoryLower.includes("religion") || categoryLower.includes("church") || categoryLower.includes("temple")) {
+    const religiousImages = [
+      "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=800&q=80", // Cathedral
+      "https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=800&q=80", // Church interior
+      "https://images.unsplash.com/photo-1564399579883-451a5d44ec08?auto=format&fit=crop&w=800&q=80", // Temple
+    ];
+    return religiousImages[index % religiousImages.length];
+  }
+  
+  // Natural sites & parks
+  if (categoryLower.includes("natural") || categoryLower.includes("park") || categoryLower.includes("garden")) {
+    const natureImages = [
+      "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80", // Park
+      "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=800&q=80", // Garden
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80", // Forest
+    ];
+    return natureImages[index % natureImages.length];
+  }
+  
+  // Entertainment & cultural
+  if (categoryLower.includes("entertainment") || categoryLower.includes("theatre") || categoryLower.includes("cultural")) {
+    const entertainmentImages = [
+      "https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=800&q=80", // Theatre
+      "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?auto=format&fit=crop&w=800&q=80", // Concert hall
+      "https://images.unsplash.com/photo-1499364615650-ec38552f4f34?auto=format&fit=crop&w=800&q=80", // Performance
+    ];
+    return entertainmentImages[index % entertainmentImages.length];
+  }
+  
+  // Default varied travel images
+  const defaultImages = [
+    "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80", // City landmark
+    "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80", // City street
+    "https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?auto=format&fit=crop&w=800&q=80", // Tourist spot
+    "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800&q=80", // Scenic view
+    "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80", // Landmark
+    "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=800&q=80", // Square
+  ];
+  return defaultImages[index % defaultImages.length];
+}
+
+// Meal images with variety
+function getMealImage(mealType: string, dayIndex: number): string {
+  const lunchImages = [
+    "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80", // Fine dining
+    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80", // Gourmet meal
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", // Salad plate
+    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80", // Pizza
+    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=800&q=80", // Colorful dish
+    "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80", // Seafood
+  ];
+  
+  return lunchImages[dayIndex % lunchImages.length];
+}
+
 export async function generateMockTripPlan(details: TripDetails): Promise<TripPlan> {
   const departureDate = details.departureDate || new Date();
   const returnDate = details.returnDate || addDays(departureDate, 5);
@@ -256,14 +336,13 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
     );
   }
 
-  // Fetch photos for attractions using Pexels (FREE!)
+  // Fetch photos for attractions using Pexels (FREE!) with proper fallbacks
   const attractionsWithPhotos = await Promise.all(
-    attractions.map(async (attraction) => {
+    attractions.map(async (attraction, index) => {
       const photoUrl = await fetchPlacePhoto(attraction.name, details.destinationCity);
       return {
         ...attraction,
-        imageUrl:
-          photoUrl || `https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80`,
+        imageUrl: photoUrl || getCategoryFallbackImage(attraction.category, index),
       };
     }),
   );
@@ -312,7 +391,7 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
       });
     });
 
-    // Add lunch with varied pricing
+    // Add lunch with varied pricing and images
     const lunchPrice = getRandomPrice(20, 40);
     dayItems.push({
       id: `day${day}-lunch`,
@@ -322,7 +401,7 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
       type: "meal",
       cost: lunchPrice,
       included: true,
-      imageUrl: `https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80`,
+      imageUrl: getMealImage("lunch", day - 1),
     });
 
     // Last day: departure
