@@ -324,7 +324,6 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
 
   // Get coordinates for destination city
   const destCoords = getCityCoordinates(details.destinationCity);
-
   // Fetch real attractions from OpenTripMap (FREE!)
   let attractions: any[] = [];
   if (destCoords) {
@@ -335,6 +334,13 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
       Math.min(tripDays * 3, 20), // Get 3 attractions per day, max 20
     );
   }
+
+  // ✅ ADD FALLBACK: If API fails or returns empty, use generic attractions
+  if (attractions.length === 0) {
+    console.log(`OpenTripMap returned no attractions for ${details.destinationCity}, using fallback attractions`);
+    attractions = getFallbackAttractions(details.destinationCity, Math.min(tripDays * 3, 20));
+  }
+  
 
   // Fetch photos for attractions using Pexels (FREE!) with proper fallbacks
   const attractionsWithPhotos = await Promise.all(
