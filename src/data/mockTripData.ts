@@ -117,6 +117,9 @@ function getCityCoordinates(city: string): { lat: number; lon: number } | null {
 }
 
 function getAirportCode(city: string): string {
+  // Strip country name if present (e.g., "Madrid, Spain" -> "Madrid")
+  const cityName = city.includes(',') ? city.split(',')[0].trim() : city;
+  
   const codes: Record<string, string> = {
     Paris: "CDG",
     Barcelona: "BCN",
@@ -148,9 +151,39 @@ function getAirportCode(city: string): string {
     Cairo: "CAI",
     "Cape Town": "CPT",
     "Tel Aviv": "TLV",
+    Frankfurt: "FRA",
+    Munich: "MUC",
+    Lisbon: "LIS",
+    Dublin: "DUB",
+    Brussels: "BRU",
+    Zurich: "ZRH",
+    Geneva: "GVA",
+    Copenhagen: "CPH",
+    Stockholm: "ARN",
+    Oslo: "OSL",
+    Helsinki: "HEL",
+    Warsaw: "WAW",
+    Budapest: "BUD",
+    Bucharest: "OTP",
+    Sofia: "SOF",
+    Zagreb: "ZAG",
+    Belgrade: "BEG",
   };
 
-  return codes[city] || "XXX";
+  // Try exact match first
+  if (codes[cityName]) {
+    return codes[cityName];
+  }
+
+  // Try case-insensitive match
+  const cityLower = cityName.toLowerCase();
+  for (const [key, code] of Object.entries(codes)) {
+    if (key.toLowerCase() === cityLower) {
+      return code;
+    }
+  }
+
+  return "XXX";
 }
 
 // Helper to get random price within a range
