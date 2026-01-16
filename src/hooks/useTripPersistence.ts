@@ -65,7 +65,10 @@ export function useTripPersistence() {
       // 2. Build trip items - handle gracefully if this fails
       let itemsWarning = false;
       try {
-        const tripItems = buildTripItems(tripId, tripPlan);
+                // Calculate total passengers for cost multiplication
+        const totalPassengers = tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants;
+        const tripItems = buildTripItems(tripId, tripPlan, totalPassengers);
+
 
         if (tripItems.length > 0) {
           const { error: itemsError } = await supabase
@@ -94,7 +97,7 @@ export function useTripPersistence() {
 }
 
 // Build all trip items from the plan
-function buildTripItems(tripId: string, tripPlan: TripPlan) {
+function buildTripItems(tripId: string, tripPlan: TripPlan, totalPassengers: number) {
   const items: Array<{
     trip_id: string;
     item_type: string;
@@ -111,13 +114,13 @@ function buildTripItems(tripId: string, tripPlan: TripPlan) {
 
   // Add outbound flight
   if (tripPlan.outboundFlight) {
-    items.push(mapFlightToItem(tripId, tripPlan.outboundFlight, "outbound", 1, 0));
+    items.push(mapFlightToItem(tripId, tripPlan.outboundFlight, "outbound", 1, 0, totalPassengers));
   }
 
   // Add return flight
   if (tripPlan.returnFlight) {
     const lastDay = tripPlan.itinerary.length || 1;
-    items.push(mapFlightToItem(tripId, tripPlan.returnFlight, "return", lastDay, 99));
+        items.push(mapFlightToItem(tripId, tripPlan.returnFlight, "return", lastDay, 99, totalPassengers));
   }
 
   // Add car rental
@@ -169,13 +172,14 @@ function mapFlightToItem(
   direction: "outbound" | "return",
   dayNumber: number,
   orderInDay: number
+    totalPassengers: number
 ) {
   return {
     trip_id: tripId,
     item_type: "flight" as const,
     name: `${flight.airline} ${flight.flightNumber} (${direction})`,
     description: `${flight.origin} (${flight.originCode}) → ${flight.destination} (${flight.destinationCode})`,
-    cost: flight.pricePerPerson,
+    cost: flight.pricePerPerson * totalPassengers, // FIX: Multiply by total passengers
     included: flight.included,
     day_number: dayNumber,
     order_in_day: orderInDay,
