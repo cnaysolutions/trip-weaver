@@ -114,8 +114,7 @@ function buildTripItems(tripId: string, tripPlan: TripPlan, totalPassengers: num
 
   // Add outbound flight
   if (tripPlan.outboundFlight) {
-    items.push(mapFlightToItem(tripId, tripPlan.outboundFlight, "outbound", 1, 0, totalPassengers));
-  }
+    items.push(mapFlightToItem(tripId, tripPlan.outboundFlight, "outbound", 1, 0, totalPassengers));  }
 
   // Add return flight
   if (tripPlan.returnFlight) {
