@@ -428,7 +428,7 @@ const handler = async (req: Request): Promise<Response> => {
     const html = generateHtmlEmail(requestData.trip, requestData.tripItems || []);
 
     const emailResponse = await sendEmailViaResend({
-      from: "Best Travel Plan <contacts@best-travel-plan.cloud>",
+      from: "Best Travel Plan <contacts@send.best-travel-plan.cloud>",
       to: [recipientEmail],
       subject,
       html,
