@@ -480,18 +480,6 @@ export async function generateMockTripPlan(details: TripDetails): Promise<TripPl
       });
     });
 
-    // Add lunch with varied pricing and images
-    const lunchPrice = getRandomPrice(20, 40);
-    dayItems.push({
-      id: `day${day}-lunch`,
-      title: "Lunch Break",
-      description: `Enjoy a local restaurant. Take time to rest and recharge.`,
-      time: "12:30",
-      type: "meal",
-      cost: lunchPrice,
-      included: true,
-      imageUrl: getMealImage("lunch", day - 1),
-    });
 
     // Last day: departure
     if (day === tripDays) {
