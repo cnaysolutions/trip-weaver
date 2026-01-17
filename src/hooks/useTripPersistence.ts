@@ -67,9 +67,9 @@ export function useTripPersistence() {
       try {
                 // Calculate total passengers for cost multiplication
         const totalPassengers = tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants;
+                // Calculate total passengers for cost multiplication
+        const totalPassengers = tripDetails.passengers.adults + tripDetails.passengers.children + tripDetails.passengers.infants;
         const tripItems = buildTripItems(tripId, tripPlan, totalPassengers);
-
-
         if (tripItems.length > 0) {
           const { error: itemsError } = await supabase
             .from("trip_items")
