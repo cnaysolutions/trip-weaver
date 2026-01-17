@@ -170,8 +170,8 @@ function mapFlightToItem(
   flight: Flight,
   direction: "outbound" | "return",
   dayNumber: number,
-  orderInDay: number
-    totalPassengers: number
+  orderInDay: number,
+  totalPassengers: number
 ) {
   return {
     trip_id: tripId,
